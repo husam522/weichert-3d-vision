@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Property Details & 3D Walkthrough | Weichert</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fflate@0.8.0/umd/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/FBXLoader.js"></script>
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background-color: #f8fafc; color: #1e293b; overflow-x: hidden; }
+        
+        button, .map-link-btn { transition: all 0.2s ease; cursor: pointer; display: inline-block; }
+        button:hover, .map-link-btn:hover { transform: scale(1.03); box-shadow: 0 4px 15px rgba(244,184,33,0.3); }
+        button:active { transform: scale(0.95); box-shadow: none; }
+
+        header { background-color: #0f172a; padding: 20px 5%; display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 24px; font-weight: 700; color: #ffffff; }
+        .logo span { color: #F4B821; }
+        .back-btn { color: #fff; text-decoration: none; font-size: 14px; font-weight: 600; transition: color 0.2s;}
+        .back-btn:hover { color: #F4B821; }
+
+        .details-container { max-width: 1200px; margin: 30px auto; padding: 0 15px; display: grid; grid-template-columns: 2fr 1fr; gap: 30px; }
+        @media (max-width: 900px) { .details-container { grid-template-columns: 1fr; } }
+        
+        .main-column { display: flex; flex-direction: column; gap: 20px; }
+        .side-column { display: flex; flex-direction: column; gap: 20px; }
+
+        .property-header-info { margin-bottom: 10px; }
+        .property-title h1 { font-size: 2rem; font-weight: 700; color: #0f172a; }
+        .property-location-tag { color: #dca018; font-weight: 600; font-size: 1.1rem; }
+        .property-price { font-size: 2rem; font-weight: 700; color: #F4B821; }
+        .status-badge { background: #F4B821; color: #111; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 10px; display: inline-block; text-transform: uppercase; }
+        .map-link-btn { display: inline-block; margin-top: 10px; background: #0f172a; color: #F4B821; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: bold; }
+
+        .gallery-box { background: #fff; padding: 10px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); position: relative; }
+        .main-img-wrap { position: relative; overflow: hidden; border-radius: 8px; background: #0f172a; height: 400px; }
+        .main-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        
+        #inlineViewer360 { position: absolute; inset: 0; width: 100%; height: 100%; display: none; cursor: grab; }
+        .img-zoom-btn { position: absolute; top: 15px; right: 15px; background: rgba(0,0,0,0.6); color: #fff; border: none; padding: 6px 10px; border-radius: 4px; font-weight: bold; cursor: pointer; z-index: 10; }
+        .badge-360-overlay { position: absolute; top: 15px; left: 15px; background: rgba(0,0,0,0.8); color: #fff; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; z-index: 10; display: none; pointer-events: none; }
+        
+        /* Added pointer-events: none to prevent ribbon from blocking touch/clicks */
+        .ribbon-wrapper { position: absolute; top: -5px; right: -5px; width: 110px; height: 110px; overflow: hidden; z-index: 10; pointer-events: none; }
+        .ribbon { background: rgba(244, 184, 33, 0.95); backdrop-filter: blur(4px); color: #0f172a; text-align: center; font-size: 11px; font-weight: 800; text-transform: uppercase; transform: rotate(45deg); position: relative; padding: 5px 0; left: 18px; top: 22px; width: 140px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .ribbon.rented { background: rgba(59, 130, 246, 0.95); color: #ffffff; }
+
+        .thumbnails { display: flex; gap: 10px; overflow-x: auto; padding-top: 10px; scroll-behavior: smooth; }
+        .thumbnails img { width: 80px; height: 60px; object-fit: cover; border-radius: 4px; cursor: pointer; border: 2px solid transparent; flex-shrink: 0; }
+        .thumbnails img:hover { border-color: #F4B821; }
+
+        #imgFullscreenModal { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 999999; display: none; align-items: center; justify-content: center; }
+        #modalZoomImg { max-width: 90%; max-height: 90%; object-fit: contain; border-radius: 8px; }
+        #fsViewer360 { width: 90%; height: 90%; display: none; cursor: grab; }
+        .close-fs { position: absolute; top: 20px; right: 30px; background: none; border: none; color: #fff; font-size: 35px; cursor: pointer; font-weight: bold; z-index: 10; }
+        .nav-fs { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.1); color: #fff; border: none; font-size: 30px; padding: 15px; cursor: pointer; border-radius: 8px; transition: 0.3s; z-index: 10; }
+        .nav-fs:hover { background: rgba(244, 184, 33, 0.8); color: #111; }
+        .nav-fs.left { left: 20px; } .nav-fs.right { right: 20px; }
+
+        .view-3d-box { background: #0f172a; border-radius: 12px; overflow: hidden; position: relative; height: 500px; box-shadow: inset 0 0 50px rgba(0,0,0,0.5); }
+        #canvas-container { width: 100%; height: 100%; touch-action: none; }
+        #iframe-container { width: 100%; height: 100%; display: none; }
+        
+        .fullscreen-btn { position: absolute; top: 15px; right: 15px; background: #F4B821; color: #111; border: none; padding: 5px 10px; border-radius: 4px; font-weight: bold; z-index: 20; cursor: pointer; }
+        .fullscreen-mode { position: fixed !important; inset: 2% !important; height: 96% !important; width: 96% !important; z-index: 99999; border: 3px solid #F4B821; box-shadow: 0 0 0 9999px rgba(0,0,0,0.85); }
+        
+        .controls-instruction { position: absolute; bottom: 10px; left: 10px; right: 10px; background: rgba(0,0,0,0.7); color: #fff; padding: 10px; border-radius: 6px; font-size: 11px; z-index: 15; text-align: center; backdrop-filter: blur(5px); pointer-events: none; }
+        .close-inst { position: absolute; top: 5px; right: 8px; background: none; border: none; color: #F4B821; font-weight: bold; cursor: pointer; pointer-events: auto; }
+        
+        .mobile-dpad { position: absolute; bottom: 50px; left: 20px; display: none; grid-template-columns: 40px 40px 40px; grid-template-rows: 40px 40px; gap: 5px; z-index: 25; }
+        .mobile-dpad button { background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.5); color: white; border-radius: 8px; font-weight: bold; font-size: 14px; user-select: none; touch-action: manipulation; }
+        .mobile-dpad button:active { background: rgba(244, 184, 33, 0.8); border-color: #F4B821; }
+        .dpad-up { grid-column: 2; grid-row: 1; } .dpad-left { grid-column: 1; grid-row: 2; } .dpad-down { grid-column: 2; grid-row: 2; } .dpad-right { grid-column: 3; grid-row: 2; }
+        
+        .mobile-vpad { position: absolute; bottom: 50px; right: 20px; display: none; flex-direction: column; gap: 5px; z-index: 25; }
+        .mobile-vpad button { background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.5); color: white; border-radius: 8px; font-weight: bold; font-size: 16px; user-select: none; width: 40px; height: 40px; text-align: center; touch-action: manipulation; }
+        .mobile-vpad button:active { background: rgba(244, 184, 33, 0.8); border-color: #F4B821; }
+
+        @media (max-width: 768px) { 
+            .mobile-dpad { display: grid; } 
+            .mobile-vpad { display: flex; }
+            .controls-instruction strong { display:none; } 
+            .controls-instruction::before { content: "Swipe to look. Walk & Fly with buttons."; } 
+        }
+
+        .specs-section { background: #fff; padding: 20px; border-radius: 12px; display: flex; justify-content: space-around; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .spec-item h3 { font-size: 1.5rem; } .spec-item p { font-size: 0.8rem; color: #64748b; }
+        .desc-section { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .desc-section h3 { margin-bottom: 10px; color: #0f172a; } .desc-section p { color: #64748b; font-size: 0.95rem; }
+
+        .widget-box { background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .widget-box h3 { margin-bottom: 15px; font-size: 1.2rem; border-bottom: 2px solid #F4B821; padding-bottom: 10px; display: inline-block; }
+        .contact-form input, .contact-form textarea, .contact-form select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; font-family: inherit; }
+        .contact-form button { width: 100%; background: #0f172a; color: #F4B821; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        
+        .custom-select-wrapper { position: relative; margin-bottom: 10px; user-select: none; }
+        .custom-select { background: #fff; border: 1px solid #cbd5e1; padding: 10px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; }
+        .custom-select-val { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: #1e293b; }
+        .custom-select-val img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+        .custom-options { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; z-index: 100; margin-top: 5px; display: none; max-height: 200px; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .custom-option { padding: 10px; display: flex; align-items: center; gap: 10px; cursor: pointer; border-bottom: 1px solid #f1f5f9; font-size: 14px; font-weight: 600; }
+        .custom-option:hover { background: #f8fafc; }
+        .custom-option img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
+        
+        .calc-input { width: 100%; padding: 8px; margin-bottom: 15px; border: 1px solid #cbd5e1; border-radius: 6px; }
+        .calc-result { background: #f8fafc; padding: 15px; text-align: center; border-radius: 6px; font-weight: bold; font-size: 1.2rem; color: #0f172a; border: 1px dashed #cbd5e1; }
+
+        .comments-section { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .comment-box-item { background: rgba(244, 184, 33, 0.15); padding: 12px; border-radius: 8px; margin-bottom: 10px; border-left: 4px solid #F4B821; display: flex; justify-content: space-between; align-items: center; }
+        .add-comment-form { display: flex; gap: 10px; margin-top: 15px; }
+        .add-comment-form input { flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; }
+        .add-comment-form button { background: #F4B821; border: none; padding: 0 20px; font-weight: bold; border-radius: 6px; color: #111; cursor: pointer; }
+        
+        .comment-del-btn { background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); border-radius: 6px; padding: 5px 12px; font-size: 11px; font-weight: bold; cursor: pointer; transition: all 0.2s; }
+        .comment-del-btn:hover { background: #ef4444; color: #fff; border-color: #ef4444; }
+
+        footer { background: #0f172a; color: #94a3b8; padding: 40px 5% 20px; text-align: center; margin-top:40px; }
+        .footer-content { display: flex; flex-wrap: wrap; justify-content: space-between; max-width: 1100px; margin: 0 auto 30px; text-align: left; gap: 30px; }
+        .footer-col h3 { color: #fff; margin-bottom: 15px; font-size: 1.2rem; }
+        .footer-logo { font-size: 24px; font-weight: 700; color: #ffffff; margin-bottom: 10px; display: block; }
+        .footer-logo span { color: #F4B821; }
+        .social-icons { display: flex; gap: 15px; margin-top: 15px; }
+        .social-icons a { color: #F4B821; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">Weichert<span>.</span></div>
+        <a href="index.html" class="back-btn">&#8592; Back to Search</a>
+    </header>
+
+    <div id="imgFullscreenModal" onclick="closeImgZoom(event)">
+        <button class="close-fs" onclick="closeImgZoom(event)">&times;</button>
+        <button class="nav-fs left" onclick="navImg(-1, event)">&#10094;</button>
+        <img id="modalZoomImg" onclick="event.stopPropagation()">
+        <div id="fsViewer360" onclick="event.stopPropagation()"></div>
+        <button class="nav-fs right" onclick="navImg(1, event)">&#10095;</button>
+    </div>
+
+    <div class="details-container">
+        <div class="main-column">
+            <div class="property-header-info">
+                <div id="propStatusBadge" class="status-badge"></div>
+                <h1 id="propTitle">Loading...</h1>
+                <div class="property-location-tag" id="propCityTag">📍 City</div>
+                <p id="propAddress" style="color:#64748b; font-size:0.9rem; margin-top:4px;"></p>
+                <a id="propMapLink" target="_blank" class="map-link-btn" style="display:none;">Open Map Location</a>
+                <div class="property-price" id="propPrice" style="margin-top:10px;">$0</div>
+            </div>
+
+            <div class="gallery-box">
+                <div class="main-img-wrap" id="ribbonContainer">
+                    <button class="img-zoom-btn" id="zoomBtn" onclick="openImgZoom(null)">[ 🔍 ] Zoom</button>
+                    <div id="badge360" class="badge-360-overlay">360°</div>
+                    <img id="mainGalleryImg" class="main-img">
+                    <div id="inlineViewer360"></div>
+                </div>
+                <div class="thumbnails" id="thumbContainer"></div>
+            </div>
+
+            <div class="specs-section">
+                <div class="spec-item"><h3 id="propBeds">0</h3><p>Beds</p></div>
+                <div class="spec-item"><h3 id="propBaths">0</h3><p>Baths</p></div>
+                <div class="spec-item"><h3 id="propSqft">0</h3><p>Sq Ft</p></div>
+            </div>
+
+            <div class="desc-section" id="descSection">
+                <h3>About This Property</h3>
+                <p id="propDescription"></p>
+            </div>
+
+            <div class="view-3d-box" id="view3dBox">
+                <button class="fullscreen-btn" id="fsBtn" onclick="toggleFS()">[ &nbsp; ]</button>
+                
+                <div id="canvas-container"></div>
+                
+                <div id="iframe-container"></div>
+                
+                <div class="mobile-dpad" id="mobileDpad">
+                    <button class="dpad-up" id="btnUp">&#8593;</button>
+                    <button class="dpad-left" id="btnLeft">&#8592;</button>
+                    <button class="dpad-down" id="btnDown">&#8595;</button>
+                    <button class="dpad-right" id="btnRight">&#8594;</button>
+                </div>
+
+                <div class="mobile-vpad" id="mobileVpad">
+                    <button id="btnFlyUp">▲</button>
+                    <button id="btnFlyDown">▼</button>
+                </div>
+
+                <div class="controls-instruction" id="ctrlInst">
+                    <button class="close-inst" onclick="document.getElementById('ctrlInst').style.display='none'">&times;</button>
+                    <strong>First-Person Mode:</strong> Click inside & move mouse to look. Use [W,A,S,D] to walk, [Space]/[Shift] to fly Up/Down.
+                </div>
+            </div>
+
+            <div class="comments-section" id="commentsSection">
+                <h3>Reviews</h3>
+                <div id="commentsList"></div>
+                <div class="add-comment-form">
+                    <input type="text" id="newComment" placeholder="Write a comment...">
+                    <button onclick="postComment()">Post</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="side-column">
+            <div class="widget-box contact-form">
+                <h3>Contact Agent</h3>
+                
+                <label style="font-size:12px; color:#64748b; margin-bottom:5px; display:block;">Select Agent</label>
+                
+                <div class="custom-select-wrapper">
+                    <div class="custom-select" onclick="toggleCustomSelect()">
+                        <div class="custom-select-val" id="customSelectValue">
+                            <img src="https://via.placeholder.com/150"> <span>Any Available Agent</span>
+                        </div>
+                        <span style="font-size:12px;">▼</span>
+                    </div>
+                    <div class="custom-options" id="customOptions">
+                        <div class="custom-option" onclick="selectAgent(-1, 'Any Available Agent', 'https://via.placeholder.com/150')">
+                            <img src="https://via.placeholder.com/150"> Any Available Agent
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="selectedAgentValue" value="-1">
+
+                <input type="text" id="leadName" placeholder="Your Name">
+                <input type="email" id="leadEmail" placeholder="Email Address">
+                
+                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                    <select id="countryCode" style="width: 100px; background: #fff;">
+                        <option value="+1">USA (+1)</option>
+                        <option value="+1">Canada (+1)</option>
+                        <option value="+52">Mexico (+52)</option>
+                    </select>
+                    <input type="tel" id="leadPhone" placeholder="Phone Number" style="flex: 1; margin-bottom: 0;">
+                </div>
+
+                <textarea id="leadMsg" rows="4" placeholder="I am interested in this property..."></textarea>
+                <button onclick="submitLead()">Request a Tour</button>
+            </div>
+
+            <div class="widget-box" id="mortgageBox">
+                <h3>Mortgage Calculator</h3>
+                <label style="font-size:12px; color:#64748b;">Home Price ($)</label>
+                <input type="number" id="calcPrice" class="calc-input" oninput="calculateMortgage()">
+                <label style="font-size:12px; color:#64748b;">Down Payment (%)</label>
+                <input type="number" id="calcDown" class="calc-input" value="20" oninput="calculateMortgage()">
+                <label style="font-size:12px; color:#64748b;">Interest Rate (%)</label>
+                <input type="number" id="calcRate" class="calc-input" value="6.5" step="0.1" oninput="calculateMortgage()">
+                <label style="font-size:12px; color:#64748b;">Loan Term (Years)</label>
+                <select id="calcYears" class="calc-input" onchange="calculateMortgage()">
+                    <option value="30">30 Years Fixed</option>
+                    <option value="25">25 Years</option>
+                    <option value="20">20 Years</option>
+                    <option value="15">15 Years</option>
+                    <option value="10">10 Years</option>
+                    <option value="5">5 Years</option>
+                </select>
+                <div class="calc-result">
+                    <span style="font-size:12px; color:#64748b; display:block;">Est. Monthly Payment</span>
+                    $<span id="calcMonthly">0</span> / mo
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-col">
+                <a class="footer-logo">Weichert<span>.</span></a>
+                <p>Premium Real Estate Services</p>
+                <div class="social-icons">
+                    <a href="#">Instagram</a> | <a href="#">Facebook</a> | <a href="#">LinkedIn</a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h3>Contact Us</h3>
+                <p>📍 123 Luxury Ave, NY 10001</p>
+                <p>📞 +1 (555) 123-4567</p>
+                <p>✉️ info@weichert.com</p>
+            </div>
+        </div>
+        <div style="border-top: 1px solid #334155; padding-top: 20px; font-size: 12px;">
+            &copy; 2026 Weichert Realtors. All rights reserved.
+        </div>
+    </footer>
+
+    <script>
+        if (!localStorage.getItem('weichertSeeded_v8')) {
+            localStorage.removeItem('weichertProperties');
+
+            const seedAgents = [
+                { name: "Michael Scott", email: "michael@weichert.com", phone: "+1 555-0101", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop" },
+                { name: "Sarah Connor", email: "sarah@weichert.com", phone: "+1 555-0202", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop" },
+                { name: "David Miller", email: "david@weichert.com", phone: "+1 555-0303", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&h=150&fit=crop" },
+                { name: "Jessica Jones", email: "jessica@weichert.com", phone: "+1 555-0404", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop" },
+                { name: "Robert Garcia", email: "robert@weichert.com", phone: "+1 555-0505", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop" },
+                { name: "Ashley Miller", email: "ashley@weichert.com", phone: "+1 555-0606", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop" },
+                { name: "William Martinez", email: "william@weichert.com", phone: "+1 555-0707", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop" },
+                { name: "Amanda Rodriguez", email: "amanda@weichert.com", phone: "+1 555-0808", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop" },
+                { name: "Richard Hernandez", email: "richard@weichert.com", phone: "+1 555-0909", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=150&h=150&fit=crop" },
+                { name: "Megan Lopez", email: "megan@weichert.com", phone: "+1 555-1010", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", image: "https://images.unsplash.com/photo-1598550874175-4d0ef436c909?w=150&h=150&fit=crop" },
+                { name: "Thomas Gonzalez", email: "thomas@weichert.com", phone: "+1 555-1111", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150&h=150&fit=crop" },
+                { name: "Laura Wilson", email: "laura@weichert.com", phone: "+1 555-1212", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", image: "https://images.unsplash.com/photo-1586297135537-94bc9ba060aa?w=150&h=150&fit=crop" },
+                { name: "James Anderson", email: "james@weichert.com", phone: "+1 555-1313", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop" },
+                { name: "Chloe Taylor", email: "chloe@weichert.com", phone: "+1 555-1414", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop" },
+                { name: "Daniel Moore", email: "daniel@weichert.com", phone: "+1 555-1515", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop" }
+            ];
+
+            const seedSellLeads = [
+                { name: "Robert King", email: "r.king@gmail.com", phone: "+1 555-9876", address: "144 Silicon Valley, CA", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", date: "8/20/2026" },
+                { name: "Emily Watson", email: "ewatson@yahoo.com", phone: "+1 555-5432", address: "22 Texas Ranch, TX", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", date: "8/21/2026" },
+                { name: "Ahmed Hassan", email: "ahmed88@hotmail.com", phone: "+1 555-1122", address: "99 Miami Beach Blvd, FL", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", date: "8/22/2026" },
+                { name: "Lisa Wong", email: "lisa.w@outlook.com", phone: "+1 555-3344", address: "505 Seattle Modern, WA", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", date: "8/22/2026" },
+                { name: "Mark Zuckerberg (Fake)", email: "markz@meta.fake", phone: "+1 555-9999", address: "1 Hacker Way", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", date: "8/23/2026" }
+            ];
+
+            const seedInbox = [
+                { propId: "General Inquiry", name: "Client A", email: "clientA@mail.com", phone: "+1 555-1111", msg: "I want to buy a house in LA.", targetAgent: "Michael Scott", agentImg: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150" },
+                { propId: "Beverly Hills Mansion", name: "Client B", email: "clientB@mail.com", phone: "+1 555-2222", msg: "Is the price negotiable?", targetAgent: "Sarah Connor", agentImg: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150" },
+                { propId: "Downtown Penthouse", name: "Client C", email: "clientC@mail.com", phone: "+1 555-3333", msg: "Can I schedule a 3D tour?", targetAgent: "Any Agent", agentImg: null },
+                { propId: "General Inquiry", name: "Client D", email: "clientD@mail.com", phone: "+1 555-4444", msg: "I need a mortgage calculation.", targetAgent: "David Miller", agentImg: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150" },
+                { propId: "Miami Beach Villa", name: "Client E", email: "clientE@mail.com", phone: "+1 555-5555", msg: "I love the 360 view!", targetAgent: "Jessica Jones", agentImg: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150" }
+            ];
+
+            const workingHouses = [
+                "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
+                "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800",
+                "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800",
+                "https://images.unsplash.com/photo-1600607687931-cebf004f38eb?w=800",
+                "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800",
+                "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800",
+                "https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800",
+                "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800"
+            ];
+
+            const interiorKitchen = "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800";
+            const interiorLiving = "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800";
+
+            const pano1 = "https://pannellum.org/images/bma-0.jpg";
+            const pano2 = "https://pannellum.org/images/bma-1.jpg";
+
+            const lumaLinks = [
+                "https://lumalabs.ai/embed/4b2a92dc-983f-433e-aa43-f89db0ea5917?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=true&loadBg=true&logoPosition=bottom-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false",
+                "https://lumalabs.ai/embed/4f362242-ad43-4851-9b04-88adf71f24f5?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=true&loadBg=true&logoPosition=bottom-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false",
+                "https://lumalabs.ai/embed/3028ec67-08cf-4795-9048-758e71d7328c?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=true&loadBg=true&logoPosition=bottom-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false",
+                "https://lumalabs.ai/embed/14e3a9f3-21f7-433a-bc3c-f5e275aafe50?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=true&loadBg=true&logoPosition=bottom-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false",
+                "https://lumalabs.ai/embed/6a1b0c89-15c1-4c7e-a708-7c6e4e2b5e54?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=true&loadBg=true&logoPosition=bottom-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false",
+                "https://lumalabs.ai/embed/0b2b3881-af79-44fc-9eb3-abb87aab8c8b?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=true&loadBg=true&logoPosition=bottom-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false",
+                "https://lumalabs.ai/embed/d2d2badd-8bdd-4874-84f7-9df2aae27f29?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=true&loadBg=true&logoPosition=bottom-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false",
+                "https://lumalabs.ai/embed/6af6e301-1267-4c53-89e1-241a4cfd1b80?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=true&loadBg=true&logoPosition=bottom-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false"
+            ];
+
+            let seedProperties = [];
+            let cities = ["Los Angeles", "New York", "Miami", "Chicago", "Austin", "Seattle", "Denver", "Boston", "San Francisco", "Las Vegas", "Aspen", "Dallas", "Houston", "Orlando", "Atlanta", "Portland", "San Diego", "Phoenix"];
+            let types = ["Villa", "Penthouse", "Mansion", "Condo", "Estate", "Modern House"];
+
+            for(let i = 1; i <= 18; i++) {
+                let priceNum = 1000000 + (Math.random() * 9000000);
+                let formattedPrice = "$" + Math.round(priceNum).toLocaleString();
+                
+                seedProperties.push({
+                    title: `Luxury Property ${i} in ${cities[i-1]}`,
+                    status: i % 4 === 0 ? "rent" : "sale",
+                    isSold: i % 7 === 0 ? true : false,
+                    type: types[i % 6],
+                    city: cities[i-1],
+                    mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", 
+                    price: formattedPrice,
+                    oldPrice: "",
+                    beds: (Math.floor(Math.random() * 5) + 2).toString(),
+                    baths: (Math.floor(Math.random() * 4) + 2).toString(),
+                    sqft: (Math.floor(Math.random() * 5000) + 1500).toString(),
+                    address: `${Math.floor(Math.random() * 9999)} Premium Ave, ${cities[i-1]}`,
+                    description: `This is a spectacular ${types[i % 6]} located in the heart of ${cities[i-1]}. It features state-of-the-art smart home technology, breathtaking views, and exquisite architectural details.`,
+                    allowComments: true,
+                    comments: [
+                        {id: 1, author: "Verified Buyer", text: "Absolutely stunning architecture and great neighborhood!"},
+                        {id: 2, author: "Real Estate Expert", text: "The 3D tour really captures the beauty of this place."}
+                    ],
+                    images: [
+                        {url: workingHouses[(i-1) % workingHouses.length], is360: false}, 
+                        {url: interiorKitchen, is360: false},    
+                        {url: interiorLiving, is360: false},      
+                        {url: pano1, is360: true},                
+                        {url: pano2, is360: true}                
+                    ],
+                    model3d: lumaLinks[(i-1) % lumaLinks.length], 
+                    modelName: "Luma_AI_Model"
+                });
+            }
+
+            let currentAgents = JSON.parse(localStorage.getItem('weichertAgents')) || [];
+            if(currentAgents.length === 0) localStorage.setItem('weichertAgents', JSON.stringify(seedAgents));
+
+            localStorage.setItem('weichertProperties', JSON.stringify(seedProperties));
+
+            let currentLeads = JSON.parse(localStorage.getItem('weichertLeads')) || [];
+            if(currentLeads.length === 0) localStorage.setItem('weichertLeads', JSON.stringify(seedInbox));
+
+            let currentSellLeads = JSON.parse(localStorage.getItem('weichertSellLeads')) || [];
+            if(currentSellLeads.length === 0) localStorage.setItem('weichertSellLeads', JSON.stringify(seedSellLeads));
+
+            localStorage.setItem('weichertSeeded_v8', 'true');
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const idx = urlParams.get('id');
+        let props = JSON.parse(localStorage.getItem('weichertProperties')) || [];
+        let prop = props[idx];
+        let currentUser = JSON.parse(localStorage.getItem('weichertUser')) || { name: 'Guest' };
+        let agents = JSON.parse(localStorage.getItem('weichertAgents')) || [];
+
+        let currentGalleryImages = [];
+        let currentZoomIdx = 0;
+        let inline360Req = null;
+        let fs360Req = null;
+
+        if(prop) {
+            document.getElementById('propStatusBadge').innerText = prop.status === 'rent' ? 'FOR RENT' : 'FOR SALE';
+            let bColor = prop.status === 'sold' ? '#64748b' : prop.status === 'pending' ? '#f97316' : prop.status === 'rent' ? '#3b82f6' : '#F4B821';
+            let tColor = prop.status === 'rent' ? '#ffffff' : '#111111';
+            document.getElementById('propStatusBadge').style.backgroundColor = bColor;
+            document.getElementById('propStatusBadge').style.color = tColor;
+
+            if(prop.status === 'rent') { document.getElementById('mortgageBox').style.display = 'none'; }
+
+            if(prop.isSold) {
+                let rText = prop.status === 'rent' ? 'RENTED' : 'SOLD';
+                let rClass = prop.status === 'rent' ? 'ribbon rented' : 'ribbon';
+                document.getElementById('ribbonContainer').innerHTML += `<div class="ribbon-wrapper"><div class="${rClass}">${rText}</div></div>`;
+            }
+
+            document.getElementById('propTitle').innerText = prop.title || '';
+            document.getElementById('propCityTag').innerText = prop.city ? '📍 ' + prop.city : '';
+            document.getElementById('propAddress').innerText = prop.address || '';
+            document.getElementById('propPrice').innerText = prop.price || '';
+            document.getElementById('propBeds').innerText = prop.beds || '0';
+            document.getElementById('propBaths').innerText = prop.baths || '0';
+            document.getElementById('propSqft').innerText = prop.sqft || '0';
+            
+            if(prop.description) document.getElementById('propDescription').innerText = prop.description;
+            else document.getElementById('descSection').style.display = 'none';
+
+            if(prop.mapLink && prop.mapLink !== '#') {
+                document.getElementById('propMapLink').href = prop.mapLink;
+                document.getElementById('propMapLink').style.display = 'inline-block';
+            }
+
+            let cOpts = document.getElementById('customOptions');
+            agents.forEach((ag, i) => {
+                let img = ag.image || 'https://via.placeholder.com/150';
+                cOpts.innerHTML += `
+                    <div class="custom-option" onclick="selectAgent(${i}, '${ag.name}', '${img}')">
+                        <img src="${img}"> ${ag.name}
+                    </div>
+                `;
+            });
+
+            currentGalleryImages = prop.images && prop.images.length > 0 ? prop.images : [prop.image];
+            currentGalleryImages = currentGalleryImages.map(img => typeof img === 'string' ? {url: img, is360: false} : img);
+            
+            currentZoomIdx = 0;
+            renderMiniPreview(currentGalleryImages[0]);
+            
+            let thumbs = document.getElementById('thumbContainer');
+            if(currentGalleryImages.length > 1) {
+                currentGalleryImages.forEach((imgObj, i) => {
+                    let th = document.createElement('img'); 
+                    th.src = imgObj.url;
+                    if(imgObj.is360) th.style.borderColor = '#3b82f6';
+                    th.onclick = () => { currentZoomIdx = i; renderMiniPreview(imgObj); };
+                    thumbs.appendChild(th);
+                });
+            } else { thumbs.style.display = 'none'; }
+
+            let numPrice = parseInt((prop.price||'0').replace(/[^0-9]/g, ''));
+            if(numPrice > 0) { document.getElementById('calcPrice').value = numPrice; calculateMortgage(); }
+
+            renderComments();
+
+            if (prop.model3d && prop.model3d.includes('lumalabs.ai')) {
+                document.getElementById('canvas-container').style.display = 'none';
+                document.getElementById('mobileDpad').style.display = 'none';
+                document.getElementById('mobileVpad').style.display = 'none'; 
+                document.getElementById('ctrlInst').style.display = 'none';
+                
+                const iframeContainer = document.getElementById('iframe-container');
+                iframeContainer.style.display = 'block';
+                
+                const iframe = document.createElement('iframe');
+                iframe.src = prop.model3d;
+                iframe.style.width = '100%';
+                iframe.style.height = '100%';
+                iframe.style.border = 'none';
+                iframe.title = "Luma AI 3D Model";
+                
+                iframeContainer.appendChild(iframe);
+            } else {
+                init3D(prop.model3d, prop.modelName);
+            }
+        }
+
+        function toggleCustomSelect() {
+            let opts = document.getElementById('customOptions');
+            opts.style.display = opts.style.display === 'block' ? 'none' : 'block';
+        }
+        function selectAgent(index, name, imgUrl) {
+            document.getElementById('selectedAgentValue').value = index;
+            document.getElementById('customSelectValue').innerHTML = `<img src="${imgUrl}"> <span>${name}</span>`;
+            document.getElementById('customOptions').style.display = 'none';
+        }
+        document.addEventListener('click', (e) => {
+            if(!e.target.closest('.custom-select-wrapper')) {
+                document.getElementById('customOptions').style.display = 'none';
+            }
+        });
+
+        function killAnimation(reqId) { if(reqId) cancelAnimationFrame(reqId); }
+
+        function run360(containerId, url) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; container.style.display = 'block';
+            
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, container.clientWidth/container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({antialias: true});
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableZoom = true; controls.enablePan = false; controls.rotateSpeed = -0.5;
+
+            const geometry = new THREE.SphereGeometry(500, 60, 40); geometry.scale(-1, 1, 1);
+            const texture = new THREE.TextureLoader().load(url);
+            const material = new THREE.MeshBasicMaterial({ map: texture });
+            scene.add(new THREE.Mesh(geometry, material));
+
+            camera.position.set(0, 0, 0.1);
+
+            let currentReq = null;
+            function animate() {
+                currentReq = requestAnimationFrame(animate);
+                controls.update(); renderer.render(scene, camera);
+            }
+            animate();
+            
+            if(containerId === 'inlineViewer360') inline360Req = currentReq;
+            else fs360Req = currentReq;
+            
+            return { camera, renderer };
+        }
+
+        function renderMiniPreview(imgObj) {
+            killAnimation(inline360Req);
+            const imgEl = document.getElementById('mainGalleryImg');
+            const inline360 = document.getElementById('inlineViewer360');
+            document.getElementById('badge360').style.display = imgObj.is360 ? 'block' : 'none';
+
+            if(imgObj.is360) {
+                imgEl.style.display = 'none';
+                run360('inlineViewer360', imgObj.url);
+            } else {
+                inline360.style.display = 'none';
+                imgEl.style.display = 'block';
+                imgEl.src = imgObj.url;
+            }
+        }
+
+        function openImgZoom(e) {
+            if(e) e.stopPropagation();
+            document.getElementById('imgFullscreenModal').style.display = 'flex';
+            renderFullscreenContent(currentGalleryImages[currentZoomIdx]);
+        }
+        function closeImgZoom(e) { 
+            if(e && e.target.id !== 'imgFullscreenModal' && !e.target.classList.contains('close-fs')) return;
+            document.getElementById('imgFullscreenModal').style.display = 'none'; 
+            killAnimation(fs360Req);
+        }
+        function navImg(dir, e) {
+            e.stopPropagation();
+            currentZoomIdx = (currentZoomIdx + dir + currentGalleryImages.length) % currentGalleryImages.length;
+            let imgObj = currentGalleryImages[currentZoomIdx];
+            renderMiniPreview(imgObj); 
+            renderFullscreenContent(imgObj);
+        }
+
+        function renderFullscreenContent(imgObj) {
+            killAnimation(fs360Req);
+            const imgViewer = document.getElementById('modalZoomImg');
+            const fsViewer = document.getElementById('fsViewer360');
+
+            if(imgObj.is360) {
+                imgViewer.style.display = 'none';
+                run360('fsViewer360', imgObj.url);
+            } else {
+                fsViewer.style.display = 'none';
+                imgViewer.style.display = 'block';
+                imgViewer.src = imgObj.url;
+            }
+        }
+
+        function calculateMortgage() {
+            let P = parseFloat(document.getElementById('calcPrice').value) || 0;
+            let dp = parseFloat(document.getElementById('calcDown').value) || 0;
+            let r = parseFloat(document.getElementById('calcRate').value) || 0;
+            let yrs = parseInt(document.getElementById('calcYears').value) || 30;
+            
+            let principal = P - (P * (dp/100)); 
+            let monthlyRate = (r / 100) / 12; 
+            let payments = yrs * 12;
+            
+            let monthly = 0;
+            if(monthlyRate > 0) monthly = principal * (monthlyRate * Math.pow(1 + monthlyRate, payments)) / (Math.pow(1 + monthlyRate, payments) - 1);
+            else monthly = principal / payments;
+            
+            document.getElementById('calcMonthly').innerText = monthly > 0 ? Math.round(monthly).toLocaleString() : '0';
+        }
+
+        function submitLead() {
+            let e = document.getElementById('leadEmail').value.trim();
+            let p = document.getElementById('leadPhone').value.trim();
+            if(!e && !p) return alert("Please provide Email or Phone!");
+            
+            let n = document.getElementById('leadName').value || 'Interested Client';
+            let code = document.getElementById('countryCode').value;
+            let m = document.getElementById('leadMsg').value;
+            
+            let agVal = document.getElementById('selectedAgentValue').value;
+            let agName = agVal !== "-1" ? agents[agVal].name : "Any Agent";
+            let agImg = agVal !== "-1" ? agents[agVal].image : null;
+
+            let leads = JSON.parse(localStorage.getItem('weichertLeads')) || [];
+            leads.push({ 
+                propId: prop.title, name: n, email: e, phone: p ? `${code} ${p}` : '', msg: m,
+                targetAgent: agName, agentImg: agImg
+            });
+            localStorage.setItem('weichertLeads', JSON.stringify(leads));
+            alert("Request sent! " + agName + " will contact you soon.");
+            document.getElementById('leadName').value=''; document.getElementById('leadEmail').value=''; document.getElementById('leadPhone').value=''; document.getElementById('leadMsg').value='';
+        }
+
+        function toggleFS() {
+            const box = document.getElementById('view3dBox'); const btn = document.getElementById('fsBtn');
+            box.classList.toggle('fullscreen-mode');
+            if(box.classList.contains('fullscreen-mode')) { btn.innerHTML = '> &lt;'; btn.style.top = 'auto'; btn.style.bottom = '15px'; } 
+            else { btn.innerHTML = '[ &nbsp; ]'; btn.style.bottom = 'auto'; btn.style.top = '15px'; }
+            setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+        }
+
+        function renderComments() {
+            if(prop.allowComments === false) { document.getElementById('commentsSection').style.display = 'none'; return; }
+            let cl = document.getElementById('commentsList'); cl.innerHTML = '';
+            if(!prop.comments || prop.comments.length===0) { cl.innerHTML='<p style="font-size:12px; color:#94a3b8;">No reviews yet.</p>'; return; }
+            
+            prop.comments.forEach((c, i) => {
+                let delBtn = (c.author === currentUser.name) ? `<button class="comment-del-btn" onclick="delUserComment(${i})">Delete</button>` : '';
+                cl.innerHTML += `
+                    <div class="comment-box-item">
+                        <div style="flex:1;">
+                            <span class="comment-author" style="font-weight:bold; color:#1e293b; font-size:13px;">${c.author}</span>
+                            <span style="font-size:12px; margin-left:10px; color:#334155;">${c.text}</span>
+                        </div>
+                        ${delBtn}
+                    </div>`;
+            });
+        }
+        function postComment() {
+            let val = document.getElementById('newComment').value.trim(); if(!val) return;
+            if(!prop.comments) prop.comments = []; prop.comments.push({ id: Date.now(), author: currentUser.name, text: val });
+            props[idx] = prop; localStorage.setItem('weichertProperties', JSON.stringify(props));
+            document.getElementById('newComment').value = ''; renderComments();
+        }
+        function delUserComment(cIdx) { 
+            prop.comments.splice(cIdx, 1); 
+            props[idx] = prop; localStorage.setItem('weichertProperties', JSON.stringify(props)); 
+            renderComments(); 
+        }
+
+        function init3D(modelUrl, fileName) {
+            const container = document.getElementById('canvas-container');
+            const scene = new THREE.Scene(); 
+            scene.background = new THREE.Color(0x0f172a);
+            scene.fog = new THREE.FogExp2(0x0f172a, 0.02); 
+
+            const camera = new THREE.PerspectiveCamera(65, container.clientWidth/container.clientHeight, 0.1, 1000); 
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true }); 
+            renderer.setSize(container.clientWidth, container.clientHeight); 
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.2;
+            container.appendChild(renderer.domElement);
+
+            let yaw = new THREE.Object3D(); let pitch = new THREE.Object3D();
+            scene.add(yaw); yaw.add(pitch); pitch.add(camera);
+            yaw.position.set(0, 1.6, 5); 
+
+            let isDragging = false; let prevX = 0, prevY = 0; const sensitivity = 0.003;
+            
+            const handleLookMove = (clientX, clientY) => {
+                if(!isDragging) return;
+                const deltaX = clientX - prevX; const deltaY = clientY - prevY;
+                prevX = clientX; prevY = clientY;
+                yaw.rotation.y -= deltaX * sensitivity; pitch.rotation.x -= deltaY * sensitivity;
+                pitch.rotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, pitch.rotation.x));
+            };
+
+            container.addEventListener('mousedown', e => { isDragging = true; prevX = e.clientX; prevY = e.clientY; container.style.cursor = 'grabbing'; });
+            window.addEventListener('mouseup', () => { isDragging = false; container.style.cursor = 'default'; });
+            window.addEventListener('mousemove', e => handleLookMove(e.clientX, e.clientY));
+
+            container.addEventListener('touchstart', e => { isDragging = true; prevX = e.touches[0].clientX; prevY = e.touches[0].clientY; }, {passive: false});
+            container.addEventListener('touchend', () => isDragging = false);
+            container.addEventListener('touchmove', e => { e.preventDefault(); handleLookMove(e.touches[0].clientX, e.touches[0].clientY); }, {passive: false});
+
+            const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 1.0); hemiLight.position.set(0, 20, 0); scene.add(hemiLight);
+            const dirLight = new THREE.DirectionalLight(0xF4B821, 1.2); dirLight.position.set(5, 10, 7); scene.add(dirLight);
+
+            let defaultCube = null;
+
+            if(!modelUrl || modelUrl.trim() === '') {
+                const cubeGeo = new THREE.BoxGeometry(2, 2, 2);
+                const cubeMat = new THREE.MeshStandardMaterial({ color: 0xF4B821, wireframe: true });
+                defaultCube = new THREE.Mesh(cubeGeo, cubeMat);
+                scene.add(defaultCube);
+                yaw.position.set(0, 0, 5);
+            } else {
+                const setupModel = (object) => {
+                    const box = new THREE.Box3().setFromObject(object);
+                    const size = box.getSize(new THREE.Vector3());
+                    const center = box.getCenter(new THREE.Vector3());
+                    
+                    object.position.x -= center.x;
+                    object.position.y -= center.y;
+                    object.position.z -= center.z;
+                    
+                    const maxDim = Math.max(size.x, size.y, size.z);
+                    const scale = 25 / maxDim;
+                    object.scale.set(scale, scale, scale);
+                    
+                    scene.add(object);
+                    yaw.position.set(0, 0, 8); 
+                };
+
+                let cleanUrl = typeof fileName === 'string' ? fileName : modelUrl.split('?')[0];
+                let ext = cleanUrl.split('.').pop().toLowerCase();
+                
+                if(ext === 'obj') new THREE.OBJLoader().load(modelUrl, setupModel);
+                else if(ext === 'fbx') new THREE.FBXLoader().load(modelUrl, setupModel);
+                else new THREE.GLTFLoader().load(modelUrl, gltf => setupModel(gltf.scene));
+            }
+
+            const keys = { w:false, a:false, s:false, d:false, space:false, shift:false };
+            
+            window.addEventListener('keydown', e => { 
+                let k = e.key.toLowerCase(); 
+                if(k === ' ' || e.code === 'Space') {
+                    k = 'space';
+                    const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+                    if(activeTag !== 'input' && activeTag !== 'textarea') {
+                        e.preventDefault(); 
+                    }
+                }
+                if(keys.hasOwnProperty(k)) keys[k] = true; 
+            });
+            
+            window.addEventListener('keyup', e => { 
+                let k = e.key.toLowerCase(); 
+                if(k === ' ' || e.code === 'Space') k = 'space';
+                if(keys.hasOwnProperty(k)) keys[k] = false; 
+            });
+
+            const bindBtn = (id, k) => {
+                let b = document.getElementById(id);
+                if(b) {
+                    b.addEventListener('touchstart', e=>{e.preventDefault(); keys[k]=true;});
+                    b.addEventListener('touchend', e=>{e.preventDefault(); keys[k]=false;});
+                    b.addEventListener('mousedown', ()=>keys[k]=true);
+                    b.addEventListener('mouseup', ()=>keys[k]=false);
+                    b.addEventListener('mouseleave', ()=>keys[k]=false);
+                }
+            };
+            bindBtn('btnUp', 'w'); bindBtn('btnDown', 's'); bindBtn('btnLeft', 'a'); bindBtn('btnRight', 'd');
+            bindBtn('btnFlyUp', 'space'); bindBtn('btnFlyDown', 'shift');
+
+            const walkSpeed = 0.05;
+
+            function updateWalkthrough() {
+                let dir = new THREE.Vector3(0, 0, -1); dir.applyQuaternion(yaw.quaternion); dir.y = 0; dir.normalize();
+                let right = new THREE.Vector3(1, 0, 0); right.applyQuaternion(yaw.quaternion); right.normalize();
+
+                if(keys.w) yaw.position.addScaledVector(dir, walkSpeed);
+                if(keys.s) yaw.position.addScaledVector(dir, -walkSpeed);
+                if(keys.a) yaw.position.addScaledVector(right, -walkSpeed);
+                if(keys.d) yaw.position.addScaledVector(right, walkSpeed);
+                
+                if(keys.space) yaw.position.y += walkSpeed;
+                if(keys.shift) yaw.position.y -= walkSpeed;
+
+                if(defaultCube) { defaultCube.rotation.x += 0.01; defaultCube.rotation.y += 0.01; }
+            }
+
+            function animate() { requestAnimationFrame(animate); updateWalkthrough(); renderer.render(scene, camera); } 
+            animate();
+
+            window.addEventListener('resize', () => {
+                if(!container) return;
+                camera.aspect = container.clientWidth / container.clientHeight; camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+    </script>
+</body>
+</html>

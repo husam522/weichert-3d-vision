@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard | Weichert, Realtors</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background-color: #0f172a; color: #f8fafc; display: flex; height: 100vh; overflow: hidden; }
+        
+        button { transition: all 0.2s ease; cursor: pointer; }
+        button:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(244,184,33,0.3); }
+        button:active { transform: scale(0.95); filter: brightness(0.85); box-shadow: none; }
+
+        @keyframes softPulse { 0% { box-shadow: 0 0 0 0 rgba(244, 184, 33, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(244, 184, 33, 0); } 100% { box-shadow: 0 0 0 0 rgba(244, 184, 33, 0); } }
+        @keyframes darkPulse { 0% { box-shadow: 0 0 0 0 rgba(180, 134, 0, 0.6); } 70% { box-shadow: 0 0 0 10px rgba(180, 134, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(180, 134, 0, 0); } }
+        @keyframes bluePulse { 0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6); } 70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); } 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); } }
+
+        #gateOverlay { position: fixed; inset: 0; background-color: #0f172a; z-index: 999999; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .gate-box { background: #1e293b; padding: 40px; border-radius: 16px; text-align: center; border-top: 4px solid #F4B821; box-shadow: 0 10px 30px rgba(0,0,0,0.5); width: 90%; max-width: 350px; }
+        .gate-input { padding: 12px; border-radius: 6px; outline: none; border: none; text-align: center; font-size: 18px; margin-bottom: 15px; width: 100%; background: #0f172a; color: #fff; }
+        .gate-btn { background: #F4B821; color: #111; padding: 12px; border: none; border-radius: 6px; font-weight: bold; width: 100%; }
+
+        aside { width: 250px; background-color: #1e293b; display: flex; flex-direction: column; padding: 20px; border-right: 1px solid #334155; }
+        .logo { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 30px; }
+        .logo span { color: #F4B821; }
+        .nav-link { color: #94a3b8; text-decoration: none; padding: 10px; display: block; border-radius: 6px; margin-bottom: 5px; }
+        .nav-link:hover, .nav-link.active { background: #F4B821; color: #0f172a; font-weight: 600; }
+        
+        .agent-nav-btn { margin-top: 15px; background: rgba(244, 184, 33, 0.1); color: #F4B821; border: 1px solid #F4B821; text-align: center; font-weight: bold; animation: softPulse 2s infinite; }
+        .agent-nav-btn:hover { background: #F4B821; color: #111; }
+
+        main { flex: 1; padding: 30px; overflow-y: auto; scroll-behavior: smooth; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        
+        #success-toast { position: fixed; top: 20px; right: 20px; padding: 15px 25px; border-radius: 8px; font-weight: 600; z-index: 100000; transform: translateY(-20px); opacity: 0; transition: all 0.3s; display: none; backdrop-filter: blur(4px); }
+        #success-toast.show { transform: translateY(0); opacity: 1; }
+        #success-toast.publish { background: rgba(244, 184, 33, 0.9); color: #111; border: 1px solid #F4B821; }
+        #success-toast.edit { background: rgba(59, 130, 246, 0.9); color: #fff; border: 1px solid #3b82f6; }
+        #success-toast.error { background: rgba(239, 68, 68, 0.9); color: #fff; border: 1px solid #ef4444; }
+
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: none; align-items: center; justify-content: center; }
+        .modal { background: #1e293b; padding: 25px; border-radius: 8px; width: 90%; max-width: 550px; border-top: 4px solid #F4B821; position: relative; max-height: 80vh; overflow-y: auto; scroll-behavior: smooth; }
+        .close-btn { position: absolute; top: 10px; right: 15px; background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
+        
+        .top-btns { display: flex; gap: 10px; }
+        .security-btn { background: #F4B821; color: #111; padding: 8px 15px; border: none; border-radius: 6px; font-weight: 700; }
+        
+        .leads-btn { background: #3b82f6; color: #fff; padding: 8px 15px; border: none; border-radius: 6px; font-weight: 700; position: relative; animation: bluePulse 2s infinite; }
+        .leads-btn:hover { background: #2563eb; }
+        .leads-badge { position: absolute; top: -5px; right: -5px; background: #ef4444; color: white; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+
+        .sell-req-btn { background: #b48600; color: #fff; padding: 8px 15px; border: none; border-radius: 6px; font-weight: 700; position: relative; animation: darkPulse 2s infinite; }
+        .sell-req-btn:hover { background: #8a6600; }
+
+        .sec-input { width: 100%; padding: 10px; margin-bottom: 10px; border-radius: 4px; border: none; outline: none; background: #0f172a; color: #fff; }
+        .trash-float-btn { position: fixed; bottom: 30px; right: 30px; background: #334155; color: #fff; width: 50px; height: 50px; border-radius: 50%; border: none; font-size: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 100; }
+        
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #1e293b; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group.full { grid-column: span 2; }
+        .form-group label { font-size: 12px; color: #94a3b8; margin-bottom: 4px; }
+        .form-group input, .form-group select, .form-group textarea { padding: 10px; background: #0f172a; border: 1px solid #334155; color: #fff; border-radius: 4px; outline: none; }
+        .submit-btn { grid-column: span 2; background: #F4B821; border: none; padding: 12px; font-weight: 700; border-radius: 4px; color: #111; transition: background 0.3s, color 0.3s; }
+        
+        table { width: 100%; border-collapse: collapse; background: #1e293b; border-radius: 8px; overflow: hidden; margin-bottom: 30px;}
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; font-size: 13px; }
+        .prop-thumb { width: 60px; height: 60px; object-fit: cover; border: 2px solid #F4B821; border-radius: 8px; }
+        .td-flex { display: flex; align-items: center; gap: 15px; }
+
+        .btn-sm { padding: 6px 12px; border: none; border-radius: 4px; font-size: 11px; font-weight: 600; margin-right: 5px; cursor: pointer; }
+        .btn-edit { background: #3b82f6; color: #fff; }
+        .btn-del { background: #ef4444; color: #fff; }
+        .btn-comments { background: #0f172a; color: #fff; border: 1px solid #334155; }
+        .btn-cancel { background: #111; color: #fff; border: 1px solid #334155; }
+        .btn-warn { background: #F4B821; color: #111; }
+
+        .lead-card { background: #0f172a; padding: 15px; border-left: 4px solid #3b82f6; border-radius: 6px; margin-bottom: 10px; display: flex; gap:10px; }
+        .lead-card img { width:40px; height:40px; border-radius:50%; object-fit:cover; border:2px solid #3b82f6; }
+        .lead-card strong { color: #fff; } .lead-card span { color: #94a3b8; font-size: 12px; }
+        
+        .sell-lead-card { background: #0f172a; padding: 15px; border-left: 4px solid #b48600; border-radius: 6px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div id="gateOverlay">
+        <div class="gate-box">
+            <h2 style="color:white; margin-bottom: 20px;">System Locked</h2>
+            <input type="password" id="gatePin" class="gate-input" placeholder="Enter PIN to unlock">
+            <button onclick="unlockGate()" class="gate-btn">Unlock</button>
+        </div>
+    </div>
+    <div id="success-toast"></div>
+
+    <div class="overlay" id="secOverlay" onclick="closeOnOutside(event, 'secOverlay')"><div class="modal"><h3>Security Settings (PIN)</h3><div id="secContent"><input type="password" id="oldPin" class="sec-input" placeholder="Current PIN"><input type="password" id="newPin1" class="sec-input" placeholder="New PIN"><input type="password" id="newPin2" class="sec-input" placeholder="Confirm New PIN"><button class="btn-sm btn-warn" style="width:100%; padding:10px; margin-bottom:10px;" onclick="savePIN()">Save New PIN</button><button class="btn-sm btn-del" style="width:100%; padding:10px;" onclick="openRemoveSecModal()">Remove Security</button></div></div></div>
+    <div class="overlay" id="removeSecOverlay" onclick="closeOnOutside(event, 'removeSecOverlay')"><div class="modal" style="background: rgba(220,38,38,0.15); border: 2px solid #ef4444; text-align: center;"><button class="close-btn" onclick="closeModal('removeSecOverlay')" style="color:#ef4444;">&times;</button><h3 style="color:#ef4444;">Disable Security</h3><input type="password" id="confirmRemovePin" class="sec-input" placeholder="Current PIN" style="border: 1px solid #ef4444; text-align: center;"><button class="btn-sm btn-del" style="width:100%; padding:10px;" onclick="confirmDisableSecurity()">Confirm</button></div></div>
+    
+    <div class="overlay" id="leadsOverlay" onclick="closeOnOutside(event, 'leadsOverlay')">
+        <div class="modal">
+            <button class="close-btn" onclick="closeModal('leadsOverlay')">&times;</button>
+            <h3 style="margin-bottom: 15px;">Purchase Requests</h3>
+            <div id="leadsList"></div>
+        </div>
+    </div>
+
+    <div class="overlay" id="sellLeadsOverlay" onclick="closeOnOutside(event, 'sellLeadsOverlay')">
+        <div class="modal" style="border-top-color: #b48600;">
+            <button class="close-btn" onclick="closeModal('sellLeadsOverlay')">&times;</button>
+            <h3 style="margin-bottom: 15px; color: #F4B821;">Seller Requests</h3>
+            <div id="sellLeadsList"></div>
+        </div>
+    </div>
+
+    <div class="overlay" id="comOverlay" onclick="closeOnOutside(event, 'comOverlay')">
+        <div class="modal">
+            <button class="close-btn" onclick="closeModal('comOverlay')">&times;</button>
+            <h3 style="margin-bottom: 15px;">Manage Reviews & Comments</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center; background: #0f172a; padding: 10px; border-radius: 6px;">
+                <button class="btn-sm btn-warn" onclick="toggleCommentSection()" style="margin:0;">Toggle Status</button>
+                <span id="commentStatusIndicator" style="font-size: 13px; font-weight: bold;"></span>
+            </div>
+            <div id="commentsListModal" style="max-height: 300px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <div class="overlay" id="agentOverlay" onclick="closeOnOutside(event, 'agentOverlay')">
+        <div class="modal">
+            <button class="close-btn" onclick="closeModal('agentOverlay')">&times;</button>
+            <h3 style="margin-bottom: 15px;">Manage Agents</h3>
+            
+            <form id="agentForm" class="form-grid" style="background:#0f172a; border:1px solid #334155; margin-bottom:20px;">
+                <input type="hidden" id="agentEditIndex" value="-1">
+                <div class="form-group full">
+                    <label>Agent Photo (Device Upload Only)</label>
+                    <input type="file" id="agentImgFile" accept="image/*">
+                </div>
+                <div class="form-group full"><label>Agent Name</label><input type="text" id="agentName" placeholder="Full Name" required></div>
+                <div class="form-group"><label>Email</label><input type="email" id="agentEmail" placeholder="Email"></div>
+                <div class="form-group"><label>Phone (Include Country Code)</label><input type="text" id="agentPhone" placeholder="+1 555-0000"></div>
+                <div class="form-group full"><label>Office Map Link (Google Maps)</label><input type="url" id="agentMapLink" placeholder="https://maps.app.goo.gl/..."></div>
+                <button type="submit" class="submit-btn" id="agentSubmitBtn">Add Agent</button>
+            </form>
+
+            <table style="margin-bottom:0;">
+                <thead><tr><th>Agent</th><th>Contact</th><th>Actions</th></tr></thead>
+                <tbody id="agentTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="overlay" id="agentEditConfirmOverlay" onclick="closeOnOutside(event, 'agentEditConfirmOverlay')"><div class="modal" style="text-align:center;"><h3>Edit Agent?</h3><input type="hidden" id="agentEditTargetIndex"><button class="btn-sm btn-edit" style="padding:10px 20px;" onclick="confirmAgentEdit()">Edit</button><button class="btn-sm btn-cancel" style="padding:10px 20px;" onclick="closeModal('agentEditConfirmOverlay')">Cancel</button></div></div>
+    <div class="overlay" id="agentDelOverlay" onclick="closeOnOutside(event, 'agentDelOverlay')"><div class="modal" style="text-align:center; background:rgba(239, 68, 68, 0.1); border:1px solid #ef4444;"><h3>Delete Agent?</h3><input type="hidden" id="agentDelTargetIndex"><button class="btn-sm btn-del" style="padding:10px 20px;" onclick="confirmAgentDelete()">Delete</button><button class="btn-sm btn-cancel" style="padding:10px 20px;" onclick="closeModal('agentDelOverlay')">Cancel</button></div></div>
+
+    <div class="overlay" id="editOverlay" onclick="closeOnOutside(event, 'editOverlay')"><div class="modal" style="text-align:center;"><h3>Edit Property?</h3><input type="hidden" id="editTargetIndex"><button class="btn-sm btn-edit" style="padding:10px 20px;" onclick="confirmEdit()">Edit</button><button class="btn-sm btn-cancel" style="padding:10px 20px;" onclick="closeModal('editOverlay')">Cancel</button></div></div>
+    
+    <div class="overlay" id="delOverlay" onclick="closeOnOutside(event, 'delOverlay')"><div class="modal" style="text-align:center;"><h3>Move to Trash?</h3><input type="hidden" id="delTargetIndex"><button class="btn-sm btn-del" style="padding:10px 20px;" onclick="confirmDelete()">Delete</button><button class="btn-sm btn-cancel" style="padding:10px 20px;" onclick="closeModal('delOverlay')">Cancel</button></div></div>
+    
+    <div class="overlay" id="trashOverlay" onclick="closeOnOutside(event, 'trashOverlay')">
+        <div class="modal" style="max-width: 600px;">
+            <button class="close-btn" onclick="closeModal('trashOverlay')">&times;</button>
+            <h3>Recycle Bin (Auto-delete after 30 days)</h3>
+            <button class="btn-sm btn-del" style="margin-bottom:15px; padding:8px 15px;" onclick="emptyTrash()">Empty All Trash</button>
+            <div id="trashList" style="max-height: 400px; overflow-y: auto; padding-right: 5px;"></div>
+        </div>
+    </div>
+
+    <aside>
+        <div class="logo">Weichert <span>Admin</span></div>
+        <a class="nav-link active">Manage Listings</a>
+        <a href="index.html" class="nav-link" target="_blank">Live Site</a>
+        <button class="nav-link agent-nav-btn" onclick="openModal('agentOverlay')">👥 Manage Agents</button>
+    </aside>
+
+    <main id="mainArea">
+        <div class="header">
+            <h2>Property Manager</h2>
+            <div class="top-btns">
+                <button class="sell-req-btn" onclick="openSellLeads()">🏠 Sell Requests <span class="leads-badge" id="sellCount">0</span></button>
+                <button class="leads-btn" onclick="openLeads()">✉️ Purchase Requests <span class="leads-badge" id="leadsCount">0</span></button>
+                <button class="security-btn" onclick="openModal('secOverlay')">🔒 Security</button>
+            </div>
+        </div>
+
+        <form id="propertyForm" class="form-grid">
+            <input type="hidden" id="editIndex" value="-1">
+            <div class="form-group"><label>Title</label><input type="text" id="title" placeholder="Optional"></div>
+            <div class="form-group"><label>Status (Sale / Rent)</label><select id="status"><option value="sale">For Sale</option><option value="rent">For Rent</option></select></div>
+            
+            <div class="form-group full" style="flex-direction:row; align-items:center; gap:10px; background: rgba(244, 184, 33, 0.1); padding: 10px; border-radius: 6px;">
+                <input type="checkbox" id="isSold" style="width:16px; height:16px;"> 
+                <label style="margin:0; font-size:13px; font-weight:bold; color:#F4B821;">Mark as Sold / Rented</label>
+            </div>
+
+            <div class="form-group"><label>Building Type</label><input type="text" id="type" list="typeList" placeholder="Optional"><datalist id="typeList"></datalist></div>
+            <div class="form-group"><label>City</label><input type="text" id="city" placeholder="Optional"></div>
+            <div class="form-group"><label>Map URL</label><input type="text" id="mapLink" placeholder="Optional"></div>
+            <div class="form-group"><label>Current Price</label><input type="text" id="price" placeholder="Optional"></div>
+            <div class="form-group"><label>Old Price</label><input type="text" id="oldPrice" placeholder="Optional"></div>
+            <div class="form-group"><label>Beds</label><input type="text" id="beds" placeholder="Optional"></div>
+            <div class="form-group"><label>Baths</label><input type="text" id="baths" placeholder="Optional"></div>
+            <div class="form-group"><label>Sq Ft</label><input type="text" id="sqft" placeholder="Optional"></div>
+            <div class="form-group full"><label>Address</label><input type="text" id="address" placeholder="Optional"></div>
+            <div class="form-group full"><label>Property Description</label><textarea id="description" rows="3" placeholder="Optional"></textarea></div>
+            
+            <div class="form-group full" id="imageInputsContainer">
+                <label>Property Images (Up to 40)</label>
+            </div>
+            <button type="button" onclick="addImageInput(null, false)" class="btn-sm btn-warn" style="width: 150px; font-weight: bold; margin-top:-10px;">+ Add Image</button>
+
+            <div class="form-group">
+                <label>3D Model (File Upload) <span style="font-size:10px; color:#94a3b8;">(Supports: .glb, .gltf, .obj, .fbx)</span></label>
+                <input type="file" id="modFile" accept=".glb,.gltf,.obj,.fbx">
+                <small id="modFileLabel" style="color:#F4B821; display:none;">File selected.</small>
+            </div>
+            <div class="form-group">
+                <label>OR 3D Model URL</label>
+                <input type="text" id="modUrl" placeholder="https://...">
+            </div>
+            
+            <button type="submit" class="submit-btn" id="formSubmitBtn">Publish Property</button>
+        </form>
+
+        <table>
+            <thead><tr><th>Property Detail</th><th>Location & Status</th><th>Actions</th></tr></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+        <button class="trash-float-btn" onclick="openTrash()">🗑️</button>
+    </main>
+
+    <script>
+        let secData = JSON.parse(localStorage.getItem('weichertSec')) || { pin: '' };
+        
+        window.onload = () => { 
+            if (!localStorage.getItem('weichertSeeded_v8')) {
+                localStorage.removeItem('weichertProperties');
+
+                const seedAgents = [
+                    { name: "Michael Scott", email: "michael@weichert.com", phone: "+1 555-0101", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop" },
+                    { name: "Sarah Connor", email: "sarah@weichert.com", phone: "+1 555-0202", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop" },
+                    { name: "David Miller", email: "david@weichert.com", phone: "+1 555-0303", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&h=150&fit=crop" },
+                    { name: "Jessica Jones", email: "jessica@weichert.com", phone: "+1 555-0404", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop" },
+                    { name: "Robert Garcia", email: "robert@weichert.com", phone: "+1 555-0505", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop" },
+                    { name: "Ashley Miller", email: "ashley@weichert.com", phone: "+1 555-0606", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop" },
+                    { name: "William Martinez", email: "william@weichert.com", phone: "+1 555-0707", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop" },
+                    { name: "Amanda Rodriguez", email: "amanda@weichert.com", phone: "+1 555-0808", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop" },
+                    { name: "Richard Hernandez", email: "richard@weichert.com", phone: "+1 555-0909", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=150&h=150&fit=crop" },
+                    { name: "Megan Lopez", email: "megan@weichert.com", phone: "+1 555-1010", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", image: "https://images.unsplash.com/photo-1598550874175-4d0ef436c909?w=150&h=150&fit=crop" },
+                    { name: "Thomas Gonzalez", email: "thomas@weichert.com", phone: "+1 555-1111", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=150&h=150&fit=crop" },
+                    { name: "Laura Wilson", email: "laura@weichert.com", phone: "+1 555-1212", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", image: "https://images.unsplash.com/photo-1586297135537-94bc9ba060aa?w=150&h=150&fit=crop" },
+                    { name: "James Anderson", email: "james@weichert.com", phone: "+1 555-1313", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop" },
+                    { name: "Chloe Taylor", email: "chloe@weichert.com", phone: "+1 555-1414", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop" },
+                    { name: "Daniel Moore", email: "daniel@weichert.com", phone: "+1 555-1515", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop" }
+                ];
+
+                const seedSellLeads = [
+                    { name: "Robert King", email: "r.king@gmail.com", phone: "+1 555-9876", address: "144 Silicon Valley, CA", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", date: "8/20/2026" },
+                    { name: "Emily Watson", email: "ewatson@yahoo.com", phone: "+1 555-5432", address: "22 Texas Ranch, TX", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", date: "8/21/2026" },
+                    { name: "Ahmed Hassan", email: "ahmed88@hotmail.com", phone: "+1 555-1122", address: "99 Miami Beach Blvd, FL", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", date: "8/22/2026" },
+                    { name: "Lisa Wong", email: "lisa.w@outlook.com", phone: "+1 555-3344", address: "505 Seattle Modern, WA", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", date: "8/22/2026" },
+                    { name: "Mark Zuckerberg (Fake)", email: "markz@meta.fake", phone: "+1 555-9999", address: "1 Hacker Way", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", date: "8/23/2026" }
+                ];
+
+                const seedInbox = [
+                    { propId: "General Inquiry", name: "Client A", email: "clientA@mail.com", phone: "+1 555-1111", msg: "I want to buy a house in LA.", targetAgent: "Michael Scott", agentImg: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150" },
+                    { propId: "Beverly Hills Mansion", name: "Client B", email: "clientB@mail.com", phone: "+1 555-2222", msg: "Is the price negotiable?", targetAgent: "Sarah Connor", agentImg: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150" },
+                    { propId: "Downtown Penthouse", name: "Client C", email: "clientC@mail.com", phone: "+1 555-3333", msg: "Can I schedule a 3D tour?", targetAgent: "Any Agent", agentImg: null },
+                    { propId: "General Inquiry", name: "Client D", email: "clientD@mail.com", phone: "+1 555-4444", msg: "I need a mortgage calculation.", targetAgent: "David Miller", agentImg: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150" },
+                    { propId: "Miami Beach Villa", name: "Client E", email: "clientE@mail.com", phone: "+1 555-5555", msg: "I love the 360 view!", targetAgent: "Jessica Jones", agentImg: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150" }
+                ];
+
+                const workingHouses = [
+                    "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800",
+                    "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800",
+                    "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800",
+                    "https://images.unsplash.com/photo-1600607687931-cebf004f38eb?w=800",
+                    "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=800",
+                    "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800",
+                    "https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=800",
+                    "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800"
+                ];
+
+                const interiorKitchen = "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800";
+                const interiorLiving = "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800";
+
+                const pano1 = "https://pannellum.org/images/bma-0.jpg";
+                const pano2 = "https://pannellum.org/images/bma-1.jpg";
+
+                const lumaLinks = [
+                    "https://lumalabs.ai/embed/4b2a92dc-983f-433e-aa43-f89db0ea5917?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=true&loadBg=true&logoPosition=bottom-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false",
+                    "https://lumalabs.ai/embed/4f362242-ad43-4851-9b04-88adf71f24f5?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=true&loadBg=true&logoPosition=bottom-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false",
+                    "https://lumalabs.ai/embed/3028ec67-08cf-4795-9048-758e71d7328c?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=true&loadBg=true&logoPosition=bottom-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false",
+                    "https://lumalabs.ai/embed/14e3a9f3-21f7-433a-bc3c-f5e275aafe50?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=true&loadBg=true&logoPosition=bottom-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false",
+                    "https://lumalabs.ai/embed/6a1b0c89-15c1-4c7e-a708-7c6e4e2b5e54?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=true&loadBg=true&logoPosition=bottom-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false",
+                    "https://lumalabs.ai/embed/0b2b3881-af79-44fc-9eb3-abb87aab8c8b?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=true&loadBg=true&logoPosition=bottom-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false",
+                    "https://lumalabs.ai/embed/d2d2badd-8bdd-4874-84f7-9df2aae27f29?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=true&loadBg=true&logoPosition=bottom-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false",
+                    "https://lumalabs.ai/embed/6af6e301-1267-4c53-89e1-241a4cfd1b80?mode=sparkles&background=%23ffffff&color=%23000000&showTitle=true&loadBg=true&logoPosition=bottom-left&infoPosition=bottom-right&cinematicVideo=undefined&showMenu=false"
+                ];
+
+                let seedProperties = [];
+                let cities = ["Los Angeles", "New York", "Miami", "Chicago", "Austin", "Seattle", "Denver", "Boston", "San Francisco", "Las Vegas", "Aspen", "Dallas", "Houston", "Orlando", "Atlanta", "Portland", "San Diego", "Phoenix"];
+                let types = ["Villa", "Penthouse", "Mansion", "Condo", "Estate", "Modern House"];
+
+                for(let i = 1; i <= 18; i++) {
+                    let priceNum = 1000000 + (Math.random() * 9000000);
+                    let formattedPrice = "$" + Math.round(priceNum).toLocaleString();
+                    
+                    seedProperties.push({
+                        title: `Luxury Property ${i} in ${cities[i-1]}`,
+                        status: i % 4 === 0 ? "rent" : "sale",
+                        isSold: i % 7 === 0 ? true : false,
+                        type: types[i % 6],
+                        city: cities[i-1],
+                        mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", 
+                        price: formattedPrice,
+                        oldPrice: "",
+                        beds: (Math.floor(Math.random() * 5) + 2).toString(),
+                        baths: (Math.floor(Math.random() * 4) + 2).toString(),
+                        sqft: (Math.floor(Math.random() * 5000) + 1500).toString(),
+                        address: `${Math.floor(Math.random() * 9999)} Premium Ave, ${cities[i-1]}`,
+                        description: `This is a spectacular ${types[i % 6]} located in the heart of ${cities[i-1]}. It features state-of-the-art smart home technology, breathtaking views, and exquisite architectural details.`,
+                        allowComments: true,
+                        comments: [
+                            {id: 1, author: "Verified Buyer", text: "Absolutely stunning architecture and great neighborhood!"},
+                            {id: 2, author: "Real Estate Expert", text: "The 3D tour really captures the beauty of this place."}
+                        ],
+                        images: [
+                            {url: workingHouses[(i-1) % workingHouses.length], is360: false}, 
+                            {url: interiorKitchen, is360: false},    
+                            {url: interiorLiving, is360: false},      
+                            {url: pano1, is360: true},                
+                            {url: pano2, is360: true}                
+                        ],
+                        model3d: lumaLinks[(i-1) % lumaLinks.length], 
+                        modelName: "Luma_AI_Model"
+                    });
+                }
+
+                let currentAgents = JSON.parse(localStorage.getItem('weichertAgents')) || [];
+                if(currentAgents.length === 0) localStorage.setItem('weichertAgents', JSON.stringify(seedAgents));
+
+                localStorage.setItem('weichertProperties', JSON.stringify(seedProperties));
+
+                let currentLeads = JSON.parse(localStorage.getItem('weichertLeads')) || [];
+                if(currentLeads.length === 0) localStorage.setItem('weichertLeads', JSON.stringify(seedInbox));
+
+                let currentSellLeads = JSON.parse(localStorage.getItem('weichertSellLeads')) || [];
+                if(currentSellLeads.length === 0) localStorage.setItem('weichertSellLeads', JSON.stringify(seedSellLeads));
+
+                localStorage.setItem('weichertSeeded_v8', 'true');
+            }
+
+            if(secData.pin) { document.getElementById('gateOverlay').style.display = 'flex'; }
+            cleanOldTrash(); loadTable(); updateLeadsCount(); updateSellCount(); addImageInput(null, false); loadAgentsTable();
+        };
+
+        function unlockGate() { if(document.getElementById('gatePin').value === secData.pin) document.getElementById('gateOverlay').style.display = 'none'; else alert("Incorrect PIN"); }
+        
+        function showToast(msg, type) { 
+            const t = document.getElementById('success-toast'); 
+            t.innerText = msg; t.style.display = 'block'; 
+            t.className = type; 
+            setTimeout(() => t.classList.add('show'), 10); 
+            setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.style.display = 'none', 300); }, 2000); 
+        }
+
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function closeOnOutside(e, id) { if(e.target.id === id) closeModal(id); }
+
+        function savePIN() {
+            let o = document.getElementById('oldPin').value, n1 = document.getElementById('newPin1').value, n2 = document.getElementById('newPin2').value;
+            if(secData.pin && o !== secData.pin) return alert("Incorrect Current PIN");
+            if(n1 !== n2 || !n1) return alert("New PINs don't match");
+            secData.pin = n1; localStorage.setItem('weichertSec', JSON.stringify(secData)); showToast("PIN saved!", "publish"); closeModal('secOverlay');
+        }
+        function openRemoveSecModal() { if(!secData.pin) return alert("No PIN set."); closeModal('secOverlay'); openModal('removeSecOverlay'); }
+        function confirmDisableSecurity() {
+            if(document.getElementById('confirmRemovePin').value !== secData.pin) return alert("Incorrect PIN.");
+            secData = {pin: ''}; localStorage.setItem('weichertSec', JSON.stringify(secData)); showToast("Security Removed!", "error"); closeModal('removeSecOverlay');
+        }
+
+        function compressImage(file, maxSize = 1200) {
+            return new Promise((resolve) => {
+                let reader = new FileReader();
+                reader.onload = (e) => {
+                    let img = new Image();
+                    img.onload = () => {
+                        let canvas = document.createElement('canvas'); let ctx = canvas.getContext('2d');
+                        let w = img.width, h = img.height;
+                        if(w > h) { if(w > maxSize) { h *= maxSize / w; w = maxSize; } } else { if(h > maxSize) { w *= maxSize / h; h = maxSize; } }
+                        canvas.width = w; canvas.height = h; ctx.drawImage(img, 0, 0, w, h);
+                        resolve(canvas.toDataURL('image/jpeg', 0.6));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function addImageInput(existingUrl = null, is360 = false) {
+            let container = document.getElementById('imageInputsContainer');
+            let currentInputs = container.querySelectorAll('.img-input-row');
+            if(currentInputs.length >= 40 && !existingUrl) { alert("Maximum 40 images allowed."); return; }
+            
+            let div = document.createElement('div');
+            div.className = 'img-input-row';
+            div.style.cssText = "display: flex; gap: 10px; margin-bottom: 8px; align-items: center; background: #0f172a; padding: 5px; border-radius: 6px;";
+            
+            let fileInputHtml = `<input type="file" class="img-file-input" accept="image/*" style="flex:1; border:none; padding:5px;">`;
+            let existingHtml = existingUrl ? `<div style="flex:1; color:#10b981; font-size:12px;">Image Loaded <input type="hidden" class="existing-img-url" value="${existingUrl}"></div>` : '';
+
+            div.innerHTML = `
+                ${existingUrl ? existingHtml : fileInputHtml}
+                <label style="color:#cbd5e1; font-size:12px; display:flex; align-items:center; gap:5px; font-weight:bold;">
+                    <input type="checkbox" class="is-360-input" ${is360 ? 'checked' : ''}> 360°
+                </label>
+                <button type="button" onclick="this.parentElement.remove()" class="btn-sm btn-del" style="padding: 6px 15px;">X</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function updateLeadsCount() {
+            let leads = JSON.parse(localStorage.getItem('weichertLeads')) || [];
+            document.getElementById('leadsCount').innerText = leads.length;
+        }
+        function openLeads() {
+            let leads = JSON.parse(localStorage.getItem('weichertLeads')) || [];
+            let list = document.getElementById('leadsList'); list.innerHTML = '';
+            if(leads.length === 0) list.innerHTML = '<p style="color:#94a3b8; font-size:12px;">No requests yet.</p>';
+            leads.forEach((L, i) => {
+                let agImg = L.agentImg ? `<img src="${L.agentImg}">` : '';
+                let agTxt = L.targetAgent ? `<span style="color:#F4B821; font-weight:bold; font-size:11px;">Target: ${L.targetAgent}</span><br>` : '';
+                list.innerHTML += `
+                    <div class="lead-card">
+                        ${agImg}
+                        <div style="flex:1;">
+                            <div style="display:flex; justify-content:space-between;"><strong>${L.name}</strong> <button onclick="delLead(${i})" style="background:none;border:none;color:#ef4444;font-weight:bold; cursor:pointer;">X</button></div>
+                            ${agTxt}
+                            <span>Email: ${L.email} | Phone: ${L.phone}</span><br>
+                            <span>Ref: ${L.propId}</span>
+                            <p style="color:#cbd5e1; font-size:13px; margin-top:5px; border-top:1px solid #334155; padding-top:5px;">${L.msg}</p>
+                        </div>
+                    </div>`;
+            });
+            openModal('leadsOverlay');
+        }
+        function delLead(i) { let leads = JSON.parse(localStorage.getItem('weichertLeads')); leads.splice(i,1); localStorage.setItem('weichertLeads', JSON.stringify(leads)); openLeads(); updateLeadsCount(); }
+
+        function updateSellCount() {
+            let sellLeads = JSON.parse(localStorage.getItem('weichertSellLeads')) || [];
+            document.getElementById('sellCount').innerText = sellLeads.length;
+        }
+        function openSellLeads() {
+            let sellLeads = JSON.parse(localStorage.getItem('weichertSellLeads')) || [];
+            let list = document.getElementById('sellLeadsList'); list.innerHTML = '';
+            if(sellLeads.length === 0) list.innerHTML = '<p style="color:#94a3b8; font-size:12px;">No seller requests yet.</p>';
+            sellLeads.forEach((L, i) => {
+                let mLink = L.mapLink ? `<a href="${L.mapLink}" target="_blank" style="color:#b48600; font-size:12px; font-weight:bold;">View Map</a>` : '';
+                list.innerHTML += `
+                    <div class="sell-lead-card">
+                        <div style="display:flex; justify-content:space-between;">
+                            <strong style="color:#fff;">${L.name}</strong> 
+                            <button onclick="delSellLead(${i})" style="background:none;border:none;color:#ef4444;font-weight:bold; cursor:pointer;">X</button>
+                        </div>
+                        <span style="color:#94a3b8; font-size:12px;">Email: ${L.email} | Phone: ${L.phone}</span><br>
+                        <span style="color:#94a3b8; font-size:12px;">Address: ${L.address || 'N/A'}</span><br>
+                        ${mLink}
+                        <div style="font-size:10px; color:#64748b; margin-top:5px; border-top:1px solid #334155; padding-top:5px;">Date: ${L.date}</div>
+                    </div>`;
+            });
+            openModal('sellLeadsOverlay');
+        }
+        function delSellLead(i) {
+            let sellLeads = JSON.parse(localStorage.getItem('weichertSellLeads'));
+            sellLeads.splice(i,1); 
+            localStorage.setItem('weichertSellLeads', JSON.stringify(sellLeads)); 
+            openSellLeads(); updateSellCount();
+        }
+
+        function loadAgentsTable() {
+            let agents = JSON.parse(localStorage.getItem('weichertAgents')) || [];
+            let tb = document.getElementById('agentTableBody'); tb.innerHTML = '';
+            agents.forEach((ag, i) => {
+                tb.innerHTML += `
+                    <tr>
+                        <td class="td-flex"><img src="${ag.image || ''}" class="prop-thumb" style="border-radius:50%"><div><strong>${ag.name}</strong></div></td>
+                        <td><small>${ag.email}</small><br><small>${ag.phone}</small></td>
+                        <td>
+                            <button class="btn-sm btn-edit" onclick="openAgentEditConfirm(${i})">Edit</button>
+                            <button class="btn-sm btn-del" onclick="reqAgentDelete(${i})">Delete</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+        document.getElementById('agentForm').onsubmit = async (e) => {
+            e.preventDefault();
+            let agents = JSON.parse(localStorage.getItem('weichertAgents')) || [];
+            let idx = document.getElementById('agentEditIndex').value;
+            
+            let fileInput = document.getElementById('agentImgFile');
+            let imgData = idx != -1 ? agents[idx].image : '';
+            if(fileInput.files.length > 0) imgData = await compressImage(fileInput.files[0], 400);
+
+            let ag = {
+                name: document.getElementById('agentName').value, email: document.getElementById('agentEmail').value,
+                phone: document.getElementById('agentPhone').value, mapLink: document.getElementById('agentMapLink').value, image: imgData
+            };
+            if(idx == -1) agents.push(ag); else agents[idx] = ag;
+            
+            localStorage.setItem('weichertAgents', JSON.stringify(agents));
+            showToast(idx == -1 ? "Agent Added!" : "Agent Updated!", idx == -1 ? "publish" : "edit");
+            document.getElementById('agentForm').reset(); document.getElementById('agentEditIndex').value = -1;
+            let btn = document.getElementById('agentSubmitBtn'); btn.innerText = "Add Agent"; btn.style.backgroundColor = "#F4B821";
+            loadAgentsTable();
+        }
+        function openAgentEditConfirm(i) {
+            document.getElementById('agentEditTargetIndex').value = i;
+            openModal('agentEditConfirmOverlay');
+        }
+        function confirmAgentEdit() {
+            let i = document.getElementById('agentEditTargetIndex').value;
+            let agents = JSON.parse(localStorage.getItem('weichertAgents')); let ag = agents[i];
+            document.getElementById('agentName').value = ag.name || ''; document.getElementById('agentEmail').value = ag.email || '';
+            document.getElementById('agentPhone').value = ag.phone || ''; document.getElementById('agentMapLink').value = ag.mapLink || '';
+            document.getElementById('agentEditIndex').value = i;
+            let btn = document.getElementById('agentSubmitBtn'); btn.innerText = "Save Agent"; btn.style.backgroundColor = "rgba(59, 130, 246, 0.9)";
+            closeModal('agentEditConfirmOverlay');
+            document.getElementById('agentOverlay').querySelector('.modal').scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        function reqAgentDelete(i) { document.getElementById('agentDelTargetIndex').value = i; openModal('agentDelOverlay'); }
+        function confirmAgentDelete() {
+            let i = document.getElementById('agentDelTargetIndex').value; let agents = JSON.parse(localStorage.getItem('weichertAgents'));
+            agents.splice(i, 1); localStorage.setItem('weichertAgents', JSON.stringify(agents));
+            closeModal('agentDelOverlay'); loadAgentsTable(); showToast("Agent Deleted", "error");
+        }
+
+        let currentPropCommentsIdx = -1;
+        function openComments(i) {
+            currentPropCommentsIdx = i; let props = JSON.parse(localStorage.getItem('weichertProperties')); let p = props[i];
+            let indicator = document.getElementById('commentStatusIndicator'); let isClosed = p.allowComments === false;
+            indicator.innerText = isClosed ? "CLOSED" : "OPEN"; indicator.style.color = isClosed ? "#ef4444" : "#10b981";
+            renderAdminCommentsList(); openModal('comOverlay');
+        }
+        function toggleCommentSection() {
+            let props = JSON.parse(localStorage.getItem('weichertProperties')); let p = props[currentPropCommentsIdx];
+            p.allowComments = p.allowComments === false ? true : false; localStorage.setItem('weichertProperties', JSON.stringify(props));
+            openComments(currentPropCommentsIdx); loadTable();
+        }
+        function renderAdminCommentsList() {
+            let props = JSON.parse(localStorage.getItem('weichertProperties')); let comments = props[currentPropCommentsIdx].comments || [];
+            let cList = document.getElementById('commentsListModal'); cList.innerHTML = '';
+            if(comments.length === 0) { cList.innerHTML = '<p style="color:#94a3b8; font-size:12px;">No comments.</p>'; return; }
+            comments.forEach((c, cIdx) => {
+                cList.innerHTML += `
+                    <div style="background:#0f172a; padding:10px; margin-bottom:8px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
+                        <div><strong style="color:#F4B821; font-size:12px;">${c.author}</strong><br><span style="color:#fff; font-size:12px;">${c.text}</span></div>
+                        <button class="btn-sm btn-del" onclick="adminDeleteComment(${cIdx})">Delete</button>
+                    </div>`;
+            });
+        }
+        function adminDeleteComment(cIdx) {
+            let props = JSON.parse(localStorage.getItem('weichertProperties')); props[currentPropCommentsIdx].comments.splice(cIdx, 1);
+            localStorage.setItem('weichertProperties', JSON.stringify(props)); renderAdminCommentsList(); loadTable(); showToast("Comment deleted", "error");
+        }
+
+        function loadTable() {
+            let props = JSON.parse(localStorage.getItem('weichertProperties')) || [];
+            let types = new Set(); let tb = document.getElementById('tableBody'); tb.innerHTML = '';
+            props.forEach((p, i) => {
+                if(p.type && p.type.trim() !== '') types.add(p.type.trim());
+                let statStr = p.status; if(p.isSold) statStr = p.status === 'rent' ? 'RENTED' : 'SOLD';
+                let cStatus = p.allowComments !== false ? `<span style="background:rgba(16,185,129,0.15); color:#10b981; padding:2px 6px; border-radius:4px; font-weight:bold;">OPEN</span>` : `<span style="background:rgba(239,68,68,0.15); color:#ef4444; padding:2px 6px; border-radius:4px; font-weight:bold;">CLOSED</span>`;
+                
+                let imgObj = p.images && p.images.length > 0 ? p.images[0] : (p.image || '');
+                let imgSrc = typeof imgObj === 'object' ? imgObj.url : imgObj;
+
+                tb.innerHTML += `
+                    <tr>
+                        <td class="td-flex"><img src="${imgSrc}" class="prop-thumb"><div><strong>${p.title||'Untitled'}</strong><br><small style="color:#94a3b8">${p.type||''}</small></div></td>
+                        <td><strong style="color:#F4B821">${p.price||''}</strong><br><small>${p.city||''} - <span style="font-weight:bold; text-transform:uppercase; color:#fff;">${statStr}</span></small><br><small>Comments: ${cStatus}</small></td>
+                        <td>
+                            <button class="btn-sm btn-edit" onclick="reqEdit(${i})">Edit</button>
+                            <button class="btn-sm btn-comments" onclick="openComments(${i})">Reviews</button>
+                            <button class="btn-sm btn-del" onclick="reqDelete(${i})">Delete</button>
+                        </td>
+                    </tr>`;
+            });
+            let dl = document.getElementById('typeList'); dl.innerHTML = ''; types.forEach(t => dl.innerHTML += `<option value="${t}">`);
+        }
+
+        function resetFormState() {
+            document.getElementById('propertyForm').reset(); document.getElementById('editIndex').value = -1;
+            document.getElementById('imageInputsContainer').innerHTML = '<label>Property Images (Up to 40)</label>'; addImageInput(null, false);
+            document.getElementById('modFileLabel').style.display = 'none';
+            let btn = document.getElementById('formSubmitBtn'); btn.innerText = "Publish Property"; btn.style.backgroundColor = "#F4B821"; btn.style.color = "#111";
+        }
+
+        document.getElementById('propertyForm').onsubmit = async (e) => {
+            e.preventDefault();
+            let props = JSON.parse(localStorage.getItem('weichertProperties')) || [];
+            let idx = document.getElementById('editIndex').value;
+            
+            let rows = document.querySelectorAll('.img-input-row'); let newImgData = [];
+            for(let row of rows) {
+                let fileInput = row.querySelector('.img-file-input'); let existingInput = row.querySelector('.existing-img-url');
+                let is360 = row.querySelector('.is-360-input').checked;
+                if(fileInput && fileInput.files.length > 0) { let b64 = await compressImage(fileInput.files[0], 1200); newImgData.push({ url: b64, is360: is360 }); } 
+                else if (existingInput) { newImgData.push({ url: existingInput.value, is360: is360 }); }
+            }
+
+            let modDataUrl = document.getElementById('modUrl').value.trim(); let modFileInput = document.getElementById('modFile');
+            let modData = idx != -1 ? props[idx].model3d : null; let fName = idx != -1 ? props[idx].modelName : '';
+
+            if(modFileInput.files.length > 0) {
+                modData = await new Promise(res => { let r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(modFileInput.files[0]); });
+                fName = modFileInput.files[0].name;
+            } else if (modDataUrl !== '') { modData = modDataUrl; fName = modDataUrl; }
+
+            let p = {
+                title: document.getElementById('title').value, status: document.getElementById('status').value, isSold: document.getElementById('isSold').checked,
+                type: document.getElementById('type').value.trim(), city: document.getElementById('city').value.trim(), mapLink: document.getElementById('mapLink').value, price: document.getElementById('price').value, oldPrice: document.getElementById('oldPrice').value,
+                beds: document.getElementById('beds').value, baths: document.getElementById('baths').value, sqft: document.getElementById('sqft').value,
+                address: document.getElementById('address').value, description: document.getElementById('description').value,
+                allowComments: idx != -1 ? (props[idx].allowComments !== false) : true, comments: idx != -1 ? props[idx].comments : [], 
+                images: newImgData, image: newImgData.length > 0 ? newImgData[0].url : '', model3d: modData, modelName: fName
+            };
+
+            if(idx == -1) props.push(p); else props[idx] = p;
+
+            try { localStorage.setItem('weichertProperties', JSON.stringify(props)); showToast(idx == -1 ? "Published successfully!" : "Updated successfully!", idx == -1 ? "publish" : "edit"); resetFormState(); loadTable(); } 
+            catch (error) { if(idx == -1) props.pop(); showToast("Storage Full! Not Saved.", "error"); }
+        };
+
+        function reqEdit(i) { document.getElementById('editTargetIndex').value = i; openModal('editOverlay'); }
+        function confirmEdit() {
+            let i = document.getElementById('editTargetIndex').value; let p = JSON.parse(localStorage.getItem('weichertProperties'))[i];
+            ['title','status','type','city','mapLink','price','oldPrice','beds','baths','sqft','address','description'].forEach(k => { if(document.getElementById(k)) document.getElementById(k).value = p[k] || ''; });
+            document.getElementById('isSold').checked = p.isSold || false;
+            
+            document.getElementById('imageInputsContainer').innerHTML = '<label>Property Images (Up to 40)</label>';
+            let imgs = p.images || []; imgs = imgs.map(img => typeof img === 'string' ? {url: img, is360: false} : img);
+            imgs.forEach(img => addImageInput(img.url, img.is360));
+            
+            if(p.modelName) {
+                document.getElementById('modUrl').value = p.modelName.startsWith('http') ? p.modelName : '';
+                if(!p.modelName.startsWith('http')) { let fl = document.getElementById('modFileLabel'); fl.innerText = `Old file attached: ${p.modelName}`; fl.style.display = 'block'; }
+            }
+
+            document.getElementById('editIndex').value = i; 
+            let btn = document.getElementById('formSubmitBtn'); btn.innerText = "Save Changes"; btn.style.backgroundColor = "rgba(59, 130, 246, 0.9)"; btn.style.color = "#fff";
+            closeModal('editOverlay'); document.getElementById('mainArea').scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function reqDelete(i) { document.getElementById('delTargetIndex').value = i; openModal('delOverlay'); }
+        function confirmDelete() { 
+            let i = document.getElementById('delTargetIndex').value; let props = JSON.parse(localStorage.getItem('weichertProperties')); 
+            let trash = JSON.parse(localStorage.getItem('weichertTrash')) || []; let item = props.splice(i, 1)[0]; 
+            item.deletedAt = Date.now(); trash.push(item); 
+            localStorage.setItem('weichertProperties', JSON.stringify(props)); localStorage.setItem('weichertTrash', JSON.stringify(trash)); 
+            closeModal('delOverlay'); loadTable(); showToast("Moved to trash!", "error"); 
+        }
+
+        function cleanOldTrash() { 
+            let trash = JSON.parse(localStorage.getItem('weichertTrash')) || []; 
+            trash = trash.filter(t => (Date.now() - t.deletedAt) < (30 * 24 * 60 * 60 * 1000)); 
+            localStorage.setItem('weichertTrash', JSON.stringify(trash)); 
+        }
+
+        function openTrash() { 
+            let trash = JSON.parse(localStorage.getItem('weichertTrash')) || []; let list = document.getElementById('trashList'); list.innerHTML = ''; 
+            if(trash.length === 0) { list.innerHTML = '<p style="color:#94a3b8; font-size:12px;">Trash is empty.</p>'; openModal('trashOverlay'); return; }
+            trash.forEach((t, i) => { 
+                let imgObj = t.images && t.images.length > 0 ? t.images[0] : (t.image || '');
+                let imgSrc = typeof imgObj === 'object' ? imgObj.url : imgObj;
+                list.innerHTML += `
+                    <div style="background:#0f172a; padding:10px; margin-bottom:10px; border-radius:6px; display:flex; justify-content:space-between; align-items:center;">
+                        <div class="td-flex"><img src="${imgSrc}" class="prop-thumb" style="width:50px; height:50px;"><div><strong style="color:#fff; font-size:13px;">${t.title||'Untitled'}</strong><br><small style="color:#94a3b8">${t.type||''} - <span style="color:#F4B821">${t.price||''}</span></small></div></div>
+                        <div style="display:flex; gap:5px;"><button class="btn-sm btn-warn" onclick="restoreTrash(${i})">Restore</button><button class="btn-sm btn-del" onclick="permanentlyDeleteTrash(${i})">Delete</button></div>
+                    </div>`; 
+            }); 
+            openModal('trashOverlay'); 
+        }
+        function restoreTrash(i) { let trash = JSON.parse(localStorage.getItem('weichertTrash')); let props = JSON.parse(localStorage.getItem('weichertProperties')) || []; let item = trash.splice(i, 1)[0]; delete item.deletedAt; props.push(item); localStorage.setItem('weichertTrash', JSON.stringify(trash)); localStorage.setItem('weichertProperties', JSON.stringify(props)); openTrash(); loadTable(); showToast("Restored!", "publish"); }
+        function permanentlyDeleteTrash(i) { let trash = JSON.parse(localStorage.getItem('weichertTrash')); trash.splice(i, 1); localStorage.setItem('weichertTrash', JSON.stringify(trash)); openTrash(); showToast("Permanently deleted!", "error"); }
+        function emptyTrash() { if(confirm("Permanently delete ALL trash?")) { localStorage.setItem('weichertTrash', JSON.stringify([])); openTrash(); showToast("Trash Emptied!", "error"); } }
+    </script>
+</body>
+</html>

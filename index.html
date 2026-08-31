@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weichert, Realtors | Premium Real Estate</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+        body { background-color: #f9f9fa; color: #333; overflow-x: hidden; }
+
+        button, .map-link-btn, .signin-nav-btn { transition: all 0.2s ease-in-out; cursor: pointer; display: inline-block; }
+        button:hover, .map-link-btn:hover { transform: scale(1.05); box-shadow: 0 4px 15px rgba(244,184,33,0.3); }
+        button:active, .map-link-btn:active { transform: scale(0.95); filter: brightness(0.85); box-shadow: none; }
+
+        @keyframes softPulse { 0% { box-shadow: 0 0 0 0 rgba(244, 184, 33, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(244, 184, 33, 0); } 100% { box-shadow: 0 0 0 0 rgba(244, 184, 33, 0); } }
+        @keyframes darkPulse { 0% { box-shadow: 0 0 0 0 rgba(180, 134, 0, 0.6); } 70% { box-shadow: 0 0 0 12px rgba(180, 134, 0, 0); } 100% { box-shadow: 0 0 0 0 rgba(180, 134, 0, 0); } }
+
+        #preloader { position: fixed; inset: 0; background-color: #1e3a8a; z-index: 99999; display: flex; justify-content: center; align-items: center; transition: opacity 0.6s ease; }
+        .preloader-content { text-align: center; }
+        .preloader-icon { width: 65px; height: 65px; stroke: #F4B821; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; margin-bottom: 12px; animation: bounceIcon 1s infinite alternate; }
+        .loading-text { color: #F4B821; font-size: 16px; font-weight: 700; letter-spacing: 3px; }
+        @keyframes bounceIcon { 0% { transform: translateY(0); } 100% { transform: translateY(-8px); } }
+
+        header { position: absolute; width: 100%; padding: 20px 5%; display: flex; justify-content: space-between; align-items: center; z-index: 1000; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
+        .logo { font-size: 26px; font-weight: 700; color: #ffffff; letter-spacing: 1px; }
+        .logo span { color: #F4B821; }
+        nav ul { list-style: none; display: flex; gap: 20px; align-items: center; }
+        nav ul li a { text-decoration: none; color: #ffffff; font-weight: 400; font-size: 14px; transition: color 0.3s; }
+        nav ul li a:hover { color: #F4B821; }
+        
+        .signin-nav-btn { background-color: #F4B821; color: #111; padding: 8px 18px; border-radius: 4px; font-weight: 600; border: none; font-size: 14px; }
+        .sell-nav-btn { background-color: #b48600; color: #fff; padding: 8px 18px; border-radius: 4px; font-weight: 700; border: none; font-size: 14px; animation: darkPulse 2s infinite; }
+        .sell-nav-btn:hover { background-color: #8a6600; }
+        .user-greeting-btn { background: transparent; color: #F4B821; border: 2px solid #F4B821; padding: 6px 15px; border-radius: 4px; font-weight: 600; display: none; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: none; z-index: 9999; }
+        .drawer { position: fixed; top: 0; right: -400px; width: 380px; height: 100%; background-color: #1e293b; z-index: 10000; box-shadow: -5px 0 25px rgba(0,0,0,0.5); padding: 30px; transition: right 0.4s ease; display: flex; flex-direction: column; }
+        .drawer.open { right: 0; }
+        .drawer-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .drawer-header h2 { color: #fff; font-size: 1.4rem; }
+        .close-drawer { background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer; }
+        
+        .drawer-form { display: flex; flex-direction: column; gap: 15px; }
+        .drawer-form input, .drawer-form select { padding: 12px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #fff; outline: none; }
+        .drawer-submit { background: #F4B821; color: #111; padding: 14px; border: none; border-radius: 6px; font-weight: 700; margin-top: 10px; }
+
+        .saved-item { background: #0f172a; border-left: 3px solid #F4B821; padding: 10px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .saved-item img { width: 50px; height: 50px; border-radius: 4px; object-fit: cover; margin-right: 10px; }
+        .logout-btn { background: #ef4444; color: #fff; padding: 10px; border: none; border-radius: 6px; width: 100%; font-weight: bold; margin-top: auto; }
+
+        .hero { position: relative; height: 100vh; overflow: visible; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 0 15px; background-color: #050914; }
+        
+        #hero-slider { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; background: #050914; overflow: hidden; }
+        
+        .hero-slide { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; z-index: 1; transition: opacity 2.5s ease-in-out; overflow: hidden; }
+        .hero-slide.prev { opacity: 1; z-index: 2; transition: opacity 2.5s ease-in-out; }
+        .hero-slide.active { opacity: 1; z-index: 3; transition: opacity 2.5s ease-in-out; }
+        
+        .hero-slide img { width: 100%; height: 100%; object-fit: cover; filter: brightness(0.55) contrast(1.1); transform: scale(1.05) translateZ(0); will-change: transform, opacity; backface-visibility: hidden; }
+        
+        .hero-slide.active img.smoothZoom { animation: smoothZoom 15s linear forwards; }
+        .hero-slide.active img.smoothPanRight { animation: smoothPanRight 15s linear forwards; }
+        .hero-slide.active img.smoothPanLeft { animation: smoothPanLeft 15s linear forwards; }
+        .hero-slide.active img.smoothZoomOut { animation: smoothZoomOut 15s linear forwards; }
+
+        @keyframes smoothZoom { 0% { transform: scale(1.05); } 100% { transform: scale(1.25); } }
+        @keyframes smoothPanRight { 0% { transform: scale(1.2) translateX(-2%); } 100% { transform: scale(1.2) translateX(2%); } }
+        @keyframes smoothPanLeft { 0% { transform: scale(1.2) translateX(2%); } 100% { transform: scale(1.2) translateX(-2%); } }
+        @keyframes smoothZoomOut { 0% { transform: scale(1.25); } 100% { transform: scale(1.05); } }
+
+        .hero-overlay { position: absolute; inset: 0; background-color: rgba(15, 23, 42, 0.35); z-index: 4; pointer-events: none; }
+        
+        .hero-content { position: relative; z-index: 10; max-width: 1100px; width: 100%; }
+
+        /* ---------- 3D Perfect Cubes Styling ---------- */
+        .interactive-title {
+            display: flex;
+            justify-content: center;
+            gap: 15px; 
+            margin-bottom: 30px;
+            perspective: 1500px;
+            z-index: 10001; 
+            position: relative;
+            pointer-events: none; 
+        }
+        
+        .interactive-title * { pointer-events: none; }
+
+        .cube-wrapper {
+            width: clamp(65px, 8vw, 100px);
+            height: clamp(65px, 8vw, 100px); 
+            display: inline-block;
+            position: relative;
+        }
+
+        .cube-mover {
+            width: 100%;
+            height: 100%;
+            transition: transform 0.85s cubic-bezier(0.2, 0.8, 0.2, 1);
+            will-change: transform;
+        }
+
+        .cube-face {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #3b4c6b 0%, #151e2e 100%);
+            border-radius: 14px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: clamp(3.5rem, 5vw, 5.5rem); 
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 
+                -2px -2px 4px rgba(0,0,0,0.9),
+                2px 2px 4px rgba(255,255,255,0.2);
+            transform-style: preserve-3d;
+            will-change: transform, box-shadow;
+            transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+            border: 1px solid rgba(255,255,255,0.08); 
+        }
+        /* ------------------------------------------------ */
+
+        .subtitle { color: #ffffff; font-size: clamp(1rem, 2vw, 1.3rem); font-weight: 400; margin-bottom: 30px; text-shadow: 0 2px 10px rgba(0,0,0,0.9); letter-spacing: 2px; text-transform: uppercase; }
+
+        .search-box { background: rgba(255, 255, 255, 0.98); padding: 15px; border-radius: 12px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; width: 100%; border-bottom: 4px solid #F4B821; box-shadow: 0 15px 40px rgba(0,0,0,0.5); backdrop-filter: blur(10px); }
+        .search-group { display: flex; flex-direction: column; text-align: left; flex: 1; min-width: 120px; }
+        .search-group label { font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; }
+        .search-group select { border: none; background: transparent; font-size: 13px; font-weight: 600; color: #1e293b; outline: none; margin-top: 4px; cursor: pointer; }
+        .search-btn-main { background-color: #F4B821; color: #111; border: none; padding: 12px 25px; border-radius: 8px; font-weight: 700; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; pointer-events: auto; }
+        .search-btn-main:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(244, 184, 33, 0.4); }
+
+        .properties-section { padding: 60px 5%; }
+        .section-header { margin-bottom: 30px; text-align: center; }
+        .section-header h2 { font-size: 2rem; color: #1e293b; }
+        .section-header .line { width: 50px; height: 3px; background-color: #F4B821; margin: 10px auto; }
+
+        .property-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+        .property-card { background: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 8px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; cursor: pointer; position: relative; transition: all 0.3s ease; }
+        .property-card:hover { transform: translateY(-5px); box-shadow: 0 12px 25px rgba(244,184,33,0.3); animation: softPulse 1.5s infinite; }
+        
+        .card-image { position: relative; height: 200px; overflow: hidden; }
+        .card-image img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+        
+        /* Updated zoom rule to ensure it works for all properties */
+        .property-card:hover .card-image img { transform: scale(1.08) !important; }
+        
+        /* Added pointer-events: none to prevent ribbons/badges from blocking the hover zoom */
+        .badge { position: absolute; top: 10px; left: 10px; background-color: #F4B821; color: #111; padding: 4px 10px; font-size: 11px; font-weight: 700; border-radius: 4px; z-index: 2; text-transform: uppercase; pointer-events: none; }
+        .badge.rent { background-color: #3b82f6; color: #fff; }
+        .badge-360 { position: absolute; top: 35px; left: 10px; background: rgba(0,0,0,0.8); color: #fff; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; z-index: 3; pointer-events: none; }
+        
+        .ribbon-wrapper { position: absolute; top: -5px; right: -5px; width: 110px; height: 110px; overflow: hidden; z-index: 10; pointer-events: none; }
+        .ribbon { background: rgba(244, 184, 33, 0.95); backdrop-filter: blur(4px); color: #0f172a; text-align: center; font-size: 11px; font-weight: 800; text-transform: uppercase; transform: rotate(45deg); position: relative; padding: 5px 0; left: 18px; top: 22px; width: 140px; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .ribbon.rented { background: rgba(59, 130, 246, 0.95); color: #ffffff; }
+
+        .wishlist-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.5); border: none; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 5; }
+        .wishlist-btn svg { width: 18px; height: 18px; fill: none; stroke: #fff; stroke-width: 2; }
+        .wishlist-btn.active svg { fill: #ef4444; stroke: #ef4444; }
+
+        .card-content { padding: 15px; flex: 1; display: flex; flex-direction: column; }
+        .price { font-size: 1.4rem; font-weight: 700; color: #1e293b; }
+        .location-text { color: #dca018; font-size: 0.8rem; font-weight: 600; margin-top: 4px; }
+        .address { color: #64748b; font-size: 0.85rem; margin-bottom: 10px; }
+        .card-features { display: flex; justify-content: space-between; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; padding: 10px 0; margin-bottom: 10px; }
+        .feature { display: flex; flex-direction: column; align-items: center; }
+        .feature-value { font-weight: 700; font-size: 0.9rem; }
+        .feature-label { font-size: 0.7rem; color: #94a3b8; }
+        
+        .agent-modal { background: #fff; padding: 30px; border-radius: 12px; width: 90%; max-width: 400px; text-align: center; position: relative; }
+        .agent-modal img { width: 80px; height: 80px; border-radius: 50%; margin-bottom: 10px; }
+        .agent-modal input, .agent-modal textarea, .agent-modal select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; }
+        .agent-modal button:not(.close-drawer) { width: 100%; padding: 12px; background: #0f172a; color: #F4B821; font-weight: bold; border: none; border-radius: 6px; }
+
+        .sell-modal { background: #1e293b; padding: 30px; border-radius: 12px; width: 90%; max-width: 450px; text-align: left; position: relative; border-top: 4px solid #b48600; }
+        .sell-modal h3 { color: #fff; margin-bottom: 20px; font-size: 1.5rem; text-align: center; }
+        .sell-modal label { color: #94a3b8; font-size: 12px; margin-bottom: 4px; display: block; }
+        .sell-modal input, .sell-modal select { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #334155; background: #0f172a; color: #fff; border-radius: 6px; outline: none; }
+        .sell-btn-submit { width: 100%; padding: 14px; background: #b48600; color: #fff; font-weight: bold; border: none; border-radius: 6px; font-size: 16px; margin-top: 10px; animation: darkPulse 2s infinite; }
+        .sell-btn-submit:hover { background: #8a6600; }
+
+        #solid-toast { position: fixed; top: 20px; right: 20px; padding: 15px 25px; border-radius: 8px; font-weight: bold; z-index: 100000; transform: translateY(-20px); opacity: 0; transition: all 0.3s; display: none; background: #b48600; color: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        #solid-toast.show { transform: translateY(0); opacity: 1; }
+
+        .agents-section { background: #fff; padding: 60px 5%; }
+        .agent-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 30px; }
+        .agent-card { text-align: center; background: #f8fafc; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); transition: transform 0.3s; cursor: pointer; border-bottom: 4px solid transparent; }
+        .agent-card:hover { transform: translateY(-5px); border-bottom-color: #F4B821; animation: softPulse 1.5s infinite; }
+        .agent-img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px; }
+        .agent-name { font-size: 1.2rem; font-weight: 700; color: #0f172a; }
+        .agent-info { font-size: 0.85rem; color: #64748b; margin-bottom: 15px; display: flex; flex-direction: column; gap: 5px; }
+        .agent-btns { display: flex; gap: 10px; justify-content: center; }
+        .agent-btn { padding: 8px 15px; border-radius: 6px; font-size: 12px; font-weight: bold; border: none; }
+        .msg-btn { background: #0f172a; color: #F4B821; }
+        
+        /* Office Location pulsing effect */
+        .map-btn { background: #F4B821; color: #111; text-decoration: none; transition: transform 0.2s, box-shadow 0.2s; }
+        .map-btn:hover { transform: scale(1.05); animation: softPulse 1.5s infinite; }
+
+        footer { background: #0f172a; color: #94a3b8; padding: 40px 5% 20px; text-align: center; }
+        .footer-content { display: flex; flex-wrap: wrap; justify-content: space-between; max-width: 1100px; margin: 0 auto 30px; text-align: left; gap: 30px; }
+        .footer-col h3 { color: #fff; margin-bottom: 15px; font-size: 1.2rem; }
+        .footer-logo { font-size: 24px; font-weight: 700; color: #ffffff; margin-bottom: 10px; display: block; }
+        .footer-logo span { color: #F4B821; }
+        .social-icons { display: flex; gap: 15px; margin-top: 15px; }
+        .social-icons a { color: #F4B821; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="preloader">
+        <div class="preloader-content">
+            <svg class="preloader-icon" viewBox="0 0 24 24">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <div class="loading-text">BUILDING EXPERIENCE...</div>
+        </div>
+    </div>
+
+    <div id="solid-toast">Request Sent Successfully!</div>
+
+    <div class="modal-overlay" id="overlay" onclick="closeModals(event)"></div>
+    
+    <div class="modal-overlay" id="agentModalOverlay" onclick="closeAgentModal(event)">
+        <div class="agent-modal" onclick="event.stopPropagation()">
+            <button class="close-drawer" style="position:absolute; top:10px; right:15px;" onclick="document.getElementById('agentModalOverlay').style.display='none'">&times;</button>
+            <img id="modalAgentImg" src="">
+            <h3 id="modalAgentName" style="color:#0f172a; margin-bottom:20px;"></h3>
+            <input type="text" id="agentLeadName" placeholder="Your Name">
+            <input type="email" id="agentLeadEmail" placeholder="Email Address">
+            <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+                <select id="agentCountryCode" style="width: 100px; background: #fff;">
+                    <option value="+1">USA (+1)</option>
+                    <option value="+1">Canada (+1)</option>
+                    <option value="+52">Mexico (+52)</option>
+                </select>
+                <input type="tel" id="agentLeadPhone" placeholder="Phone Number" style="flex: 1; margin-bottom: 0;">
+            </div>
+            <textarea id="agentLeadMsg" rows="3" placeholder="How can I help you?"></textarea>
+            <button onclick="sendAgentLead()">Send Message</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="sellModalOverlay" onclick="closeSellModal(event)">
+        <div class="sell-modal" onclick="event.stopPropagation()">
+            <button class="close-drawer" style="position:absolute; top:10px; right:15px;" onclick="document.getElementById('sellModalOverlay').style.display='none'">&times;</button>
+            <h3>Sell Your Home</h3>
+            
+            <label>Full Name</label>
+            <input type="text" id="sellName" placeholder="e.g. John Doe">
+            
+            <label>Email Address</label>
+            <input type="email" id="sellEmail" placeholder="e.g. john@example.com">
+            
+            <label>Phone Number</label>
+            <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+                <select id="sellCountryCode" style="width: 120px;">
+                    <option value="+1">USA (+1)</option>
+                    <option value="+1">Canada (+1)</option>
+                    <option value="+52">Mexico (+52)</option>
+                </select>
+                <input type="tel" id="sellPhone" placeholder="Phone Number" style="flex: 1; margin-bottom: 0;">
+            </div>
+
+            <label>Property Map Link (URL) - Optional</label>
+            <input type="url" id="sellMapLink" placeholder="https://maps.app.goo.gl/...">
+            
+            <label>Property Address - Optional</label>
+            <input type="text" id="sellAddressText" placeholder="e.g. 123 Main St, New York">
+
+            <button class="sell-btn-submit" onclick="submitSellLead()">Submit Request</button>
+        </div>
+    </div>
+
+    <div id="authDrawer" class="drawer">
+        <div id="loginSection">
+            <div class="drawer-header"><h2>Sign In</h2><button class="close-drawer" onclick="closeModals('force')">&times;</button></div>
+            <div class="drawer-form">
+                <input type="text" id="userName" placeholder="Full Name">
+                <input type="email" id="userEmail" placeholder="Email Address">
+                <button class="drawer-submit" onclick="handleSignIn()">Sign In</button>
+            </div>
+        </div>
+        <div id="dashboardSection" style="display: none; height: 100%; flex-direction: column;">
+            <div class="drawer-header"><h2>My Dashboard</h2><button class="close-drawer" onclick="closeModals('force')">&times;</button></div>
+            <h4 style="color:#F4B821; margin-bottom: 15px;">Saved Properties</h4>
+            <div id="savedList" style="flex:1; overflow-y:auto; margin-bottom: 15px;"></div>
+            <button class="logout-btn" onclick="handleLogout()">Log Out</button>
+        </div>
+    </div>
+
+    <header>
+        <div class="logo">Weichert</div>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><button class="signin-nav-btn" id="loginBtn" onclick="openDrawer('login')">Sign In</button></li>
+                <li><button class="user-greeting-btn" id="userBtn" onclick="openDrawer('dash')"></button></li>
+                <li><button class="sell-nav-btn" onclick="openSellModal()">Sell Your Home</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <section class="hero" id="heroSection">
+        <div id="hero-slider"></div>
+        <div class="hero-overlay"></div>
+
+        <div class="hero-content">
+            <!-- 3D Cubes HTML -->
+            <div class="interactive-title" id="interactiveTitle">
+                <div class="cube-wrapper"><div class="cube-mover"><div class="cube-face">W</div></div></div>
+                <div class="cube-wrapper"><div class="cube-mover"><div class="cube-face">e</div></div></div>
+                <div class="cube-wrapper"><div class="cube-mover"><div class="cube-face">i</div></div></div>
+                <div class="cube-wrapper"><div class="cube-mover"><div class="cube-face">c</div></div></div>
+                <div class="cube-wrapper"><div class="cube-mover"><div class="cube-face">h</div></div></div>
+                <div class="cube-wrapper"><div class="cube-mover"><div class="cube-face">e</div></div></div>
+                <div class="cube-wrapper"><div class="cube-mover"><div class="cube-face">r</div></div></div>
+                <div class="cube-wrapper"><div class="cube-mover"><div class="cube-face">t</div></div></div>
+            </div>
+            
+            <p class="subtitle">Find Your Dream Property</p>
+            
+            <div class="search-box">
+                <div class="search-group"><label>Status</label><select id="filterStatus"><option value="all">Any Status</option><option value="sale">For Sale</option><option value="rent">For Rent</option></select></div>
+                <div class="search-group"><label>Building Type</label><select id="filterType"><option value="all">All Types</option></select></div>
+                <div class="search-group"><label>City</label><select id="filterCity"><option value="all">All Cities</option></select></div>
+                <div class="search-group"><label>Min Price</label><select id="filterMinPrice"><option value="0">Any</option></select></div>
+                <div class="search-group"><label>Max Price</label><select id="filterMaxPrice"><option value="999999999">Any</option></select></div>
+                <button class="search-btn-main" id="searchBtnLogic" onclick="applySearch()">Search <span id="matchCount" style="font-size:10px;">(0)</span></button>
+            </div>
+        </div>
+    </section>
+
+    <section class="properties-section" id="properties">
+        <div class="section-header">
+            <h2>Featured Listings</h2>
+            <div class="line"></div>
+        </div>
+        <div class="property-grid" id="propertiesGrid"></div>
+    </section>
+
+    <section class="agents-section">
+        <div class="section-header">
+            <h2>Meet Our Agents</h2>
+            <div class="line"></div>
+        </div>
+        <div class="agent-grid" id="agentGrid"></div>
+    </section>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-col">
+                <a class="footer-logo">Weichert</a>
+                <p>Premium Real Estate Services</p>
+                <div class="social-icons">
+                    <a href="#">Instagram</a> | <a href="#">Facebook</a> | <a href="#">LinkedIn</a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h3>Contact Us</h3>
+                <p>📍 123 Luxury Ave, NY 10001</p>
+                <p>📞 +1 (555) 123-4567</p>
+                <p>✉️ info@weichert.com</p>
+            </div>
+        </div>
+        <div style="border-top: 1px solid #334155; padding-top: 20px; font-size: 12px;">
+            &copy; 2026 Weichert Realtors. All rights reserved.
+        </div>
+    </footer>
+
+    <script>
+        /* 
+           =========== Supreme 3D Physics Engine ===========
+           Flawless logic to track mouse, perfectly squared 3D extrusion, 
+           and smooth flying encircle mechanism.
+        */
+        
+        let pointerX = window.innerWidth / 2;
+        let pointerY = window.innerHeight / 2;
+        
+        let smoothedGazeX = pointerX;
+        let smoothedGazeY = pointerY;
+        
+        let activeHoverButton = null;
+
+        window.addEventListener('mousemove', (e) => {
+            pointerX = e.clientX;
+            pointerY = e.clientY;
+        });
+        window.addEventListener('touchmove', (e) => {
+            pointerX = e.touches[0].clientX;
+            pointerY = e.touches[0].clientY;
+        }, {passive: true});
+
+        const titleLetters = document.querySelectorAll('.cube-wrapper');
+        const cubesState = [];
+        titleLetters.forEach((el, index) => {
+            cubesState.push({
+                wrapper: el,
+                mover: el.querySelector('.cube-mover'),
+                face: el.querySelector('.cube-face'),
+                angle: (index / titleLetters.length) * Math.PI * 2 
+            });
+        });
+
+        setTimeout(() => {
+            const flightButtons = [
+                document.getElementById('loginBtn'),              
+                document.querySelector('.sell-nav-btn'),          
+                document.querySelector('.search-btn-main')        
+            ];
+            
+            flightButtons.forEach(btn => {
+                if(btn) {
+                    btn.addEventListener('mouseenter', () => activeHoverButton = btn);
+                    btn.addEventListener('mouseleave', () => activeHoverButton = null);
+                    btn.addEventListener('touchstart', () => activeHoverButton = btn, {passive: true});
+                    btn.addEventListener('touchend', () => activeHoverButton = null, {passive: true});
+                }
+            });
+        }, 300);
+
+        function renderInteractiveCubes() {
+            let targetFocusX = pointerX;
+            let targetFocusY = pointerY;
+
+            if (activeHoverButton) {
+                const btnRect = activeHoverButton.getBoundingClientRect();
+                targetFocusX = btnRect.left + btnRect.width / 2;
+                targetFocusY = btnRect.top + btnRect.height / 2;
+            }
+
+            // Lerp for buttery smooth looking transition
+            smoothedGazeX += (targetFocusX - smoothedGazeX) * 0.08;
+            smoothedGazeY += (targetFocusY - smoothedGazeY) * 0.08;
+
+            cubesState.forEach(cube => {
+                const rect = cube.wrapper.getBoundingClientRect();
+                const anchorX = rect.left + rect.width / 2;
+                const anchorY = rect.top + rect.height / 2;
+
+                let transX = 0;
+                let transY = 0;
+                let scaleFactor = 1;
+
+                if (activeHoverButton) {
+                    const circleRadius = 110; 
+                    const destinationX = targetFocusX + Math.cos(cube.angle) * circleRadius;
+                    const destinationY = targetFocusY + Math.sin(cube.angle) * circleRadius;
+                    
+                    transX = destinationX - anchorX;
+                    transY = destinationY - anchorY;
+                    scaleFactor = 0.25; 
+                }
+
+                cube.mover.style.transform = `translate(${transX}px, ${transY}px) scale(${scaleFactor})`;
+
+                const currentFaceX = anchorX + transX;
+                const currentFaceY = anchorY + transY;
+                const diffX = smoothedGazeX - currentFaceX;
+                const diffY = smoothedGazeY - currentFaceY;
+
+                // Accurate pointing
+                const rotX = Math.max(-55, Math.min(55, -diffY / 10));
+                const rotY = Math.max(-55, Math.min(55, diffX / 10));
+
+                cube.face.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+
+                // Exact Mathematical 3D Depth (Depth = Width)
+                const extrusionDepth = Math.round(rect.width); 
+                
+                // Opposite of gaze to build the back of the cube
+                const shadowOffX = -Math.sin(rotY * Math.PI / 180);
+                const shadowOffY = Math.sin(rotX * Math.PI / 180);
+
+                let shadowLayers = '';
+                for(let i = 1; i <= extrusionDepth; i += 1) {
+                    shadowLayers += `${shadowOffX * i}px ${shadowOffY * i}px 0px #090e17, `;
+                }
+                
+                // Transparent black shadow directly below
+                shadowLayers += `${shadowOffX * extrusionDepth}px ${(shadowOffY * extrusionDepth) + 15}px 15px rgba(0,0,0,0.5)`;
+
+                cube.face.style.boxShadow = shadowLayers;
+            });
+            
+            requestAnimationFrame(renderInteractiveCubes);
+        }
+        
+        renderInteractiveCubes();
+        /* ============================================== */
+
+        function initFlawlessSlider() {
+            const safeIds = [
+                "1600596542815-ffad4c1539a9", "1512917774080-9991f1c4c750", "1600585154340-be6161a56a0c", "1600607687931-cebf004f38eb",
+                "1583608205776-bfd35f0d9f83", "1564013799919-ab600027ffc6", "1510798831971-661eb04b3739", "1600047509807-ba8f99d2cdde"
+            ];
+            const photoIds = [];
+            while(photoIds.length < 40) { photoIds.push(...safeIds); }
+            photoIds.length = 40;
+            const container = document.getElementById('hero-slider');
+            if(!container) return;
+            photoIds.forEach((id, index) => {
+                const div = document.createElement('div');
+                div.className = 'hero-slide';
+                const img = document.createElement('img');
+                const fullUrl = `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=1920&q=80`;
+                if(index <= 1) img.src = fullUrl; else img.dataset.src = fullUrl;
+                div.appendChild(img);
+                container.appendChild(div);
+            });
+            const slides = document.querySelectorAll('.hero-slide');
+            const animTypes = ['smoothZoom', 'smoothPanRight', 'smoothPanLeft', 'smoothZoomOut'];
+            let currentIndex = 0; let isWaiting = false;
+            slides[0].classList.add('active');
+            slides[0].querySelector('img').style.animation = `${animTypes[0]} 15s linear forwards`;
+            setInterval(() => {
+                if(isWaiting) return; 
+                let nextIndex = (currentIndex + 1) % slides.length;
+                let nextSlide = slides[nextIndex];
+                let nextImg = nextSlide.querySelector('img');
+                const playTransition = () => {
+                    isWaiting = false; clearTimeout(nextImg.fallbackTimer); 
+                    slides[currentIndex].className = 'hero-slide prev'; nextSlide.className = 'hero-slide active';
+                    nextImg.style.animation = 'none'; void nextImg.offsetWidth; 
+                    nextImg.style.animation = `${animTypes[nextIndex % 4]} 15s linear forwards`;
+                    slides.forEach((s, i) => {
+                        if(i !== currentIndex && i !== nextIndex) { s.className = 'hero-slide'; setTimeout(() => { if(s.className === 'hero-slide') s.querySelector('img').style.animation = 'none'; }, 3000); }
+                    });
+                    currentIndex = nextIndex;
+                    let preloadIdx = (currentIndex + 1) % slides.length;
+                    let preloadImg = slides[preloadIdx].querySelector('img');
+                    if(preloadImg.dataset.src) { preloadImg.src = preloadImg.dataset.src; preloadImg.removeAttribute('data-src'); }
+                };
+                if (nextImg.complete && nextImg.naturalWidth > 0) playTransition();
+                else {
+                    isWaiting = true;
+                    if(nextImg.dataset.src) { nextImg.src = nextImg.dataset.src; nextImg.removeAttribute('data-src'); }
+                    nextImg.onload = playTransition;
+                    nextImg.fallbackTimer = setTimeout(() => { isWaiting = false; currentIndex = nextIndex; }, 2000); 
+                    nextImg.onerror = () => { clearTimeout(nextImg.fallbackTimer); isWaiting = false; currentIndex = nextIndex; };
+                }
+            }, 6000); 
+        }
+
+        window.onload = () => {
+            initFlawlessSlider(); 
+            if (!localStorage.getItem('weichertSeeded_v8')) {
+                localStorage.removeItem('weichertProperties');
+                const seedAgents = [{ name: "Michael Scott", email: "michael@weichert.com", phone: "+1 555-0101", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150&h=150&fit=crop" }, { name: "Sarah Connor", email: "sarah@weichert.com", phone: "+1 555-0202", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop" }, { name: "David Miller", email: "david@weichert.com", phone: "+1 555-0303", mapLink: "https://maps.app.goo.gl/yLzY7F7X6s6h3pX57", image: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&h=150&fit=crop" }];
+                const seedSellLeads = [{ name: "Robert King", email: "r.king@gmail.com", phone: "+1 555-9876", address: "144 Silicon Valley, CA", mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", date: "8/20/2026" }];
+                const seedInbox = [{ propId: "General Inquiry", name: "Client A", email: "clientA@mail.com", phone: "+1 555-1111", msg: "I want to buy a house in LA.", targetAgent: "Michael Scott", agentImg: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=150" }];
+                const workingHouses = ["https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800"];
+                const interiorKitchen = "https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800";
+                const interiorLiving = "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800";
+                const pano1 = "https://pannellum.org/images/bma-0.jpg";
+                const pano2 = "https://pannellum.org/images/bma-1.jpg";
+                const lumaLinks = ["https://lumalabs.ai/embed/4b2a92dc-983f-433e-aa43-f89db0ea5917?mode=sparkles"];
+                let seedProperties = [];
+                let cities = ["Los Angeles", "New York", "Miami", "Chicago"];
+                let types = ["Villa", "Penthouse", "Mansion"];
+                for(let i = 1; i <= 6; i++) {
+                    let priceNum = 1000000 + (Math.random() * 9000000); let formattedPrice = "$" + Math.round(priceNum).toLocaleString();
+                    seedProperties.push({ title: `Luxury Property ${i} in ${cities[i%4]}`, status: i % 2 === 0 ? "rent" : "sale", isSold: false, type: types[i % 3], city: cities[i%4], mapLink: "https://maps.app.goo.gl/PZrAxyfG6f73v9sW8", price: formattedPrice, oldPrice: "", beds: (Math.floor(Math.random() * 5) + 2).toString(), baths: (Math.floor(Math.random() * 4) + 2).toString(), sqft: (Math.floor(Math.random() * 5000) + 1500).toString(), address: `${Math.floor(Math.random() * 9999)} Premium Ave, ${cities[i%4]}`, description: `This is a spectacular property.`, allowComments: true, comments: [], images: [{url: workingHouses[0], is360: false}, {url: interiorKitchen, is360: false}, {url: interiorLiving, is360: false}, {url: pano1, is360: true}], model3d: lumaLinks[0], modelName: "Luma_AI_Model" });
+                }
+                localStorage.setItem('weichertAgents', JSON.stringify(seedAgents));
+                localStorage.setItem('weichertProperties', JSON.stringify(seedProperties));
+                localStorage.setItem('weichertLeads', JSON.stringify(seedInbox));
+                localStorage.setItem('weichertSellLeads', JSON.stringify(seedSellLeads));
+                localStorage.setItem('weichertSeeded_v8', 'true');
+            }
+            setTimeout(() => { document.getElementById('preloader').style.opacity = '0'; setTimeout(() => document.getElementById('preloader').style.display = 'none', 600); }, 500);
+            checkUser(); populateDropdowns(); renderListings(); renderAgents();
+        };
+
+        function showSolidToast(msg) { const t = document.getElementById('solid-toast'); t.innerText = msg; t.style.display = 'block'; setTimeout(() => t.classList.add('show'), 10); setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.style.display = 'none', 300); }, 2000); }
+        function openSellModal() { document.getElementById('sellModalOverlay').style.display = 'flex'; }
+        function closeSellModal(e) { if(e.target.id === 'sellModalOverlay') document.getElementById('sellModalOverlay').style.display = 'none'; }
+        function submitSellLead() {
+            let n = document.getElementById('sellName').value.trim(), e = document.getElementById('sellEmail').value.trim(), p = document.getElementById('sellPhone').value.trim(), code = document.getElementById('sellCountryCode').value, mLink = document.getElementById('sellMapLink').value.trim(), addr = document.getElementById('sellAddressText').value.trim();
+            if(!e && !p) return alert("Please provide either an Email Address or a Phone Number."); if(!n) n = "Home Owner";
+            let sellLeads = JSON.parse(localStorage.getItem('weichertSellLeads')) || []; sellLeads.push({ name: n, email: e, phone: p ? `${code} ${p}` : '', mapLink: mLink, address: addr, date: new Date().toLocaleDateString() }); localStorage.setItem('weichertSellLeads', JSON.stringify(sellLeads));
+            document.getElementById('sellName').value = ''; document.getElementById('sellEmail').value = ''; document.getElementById('sellPhone').value = ''; document.getElementById('sellMapLink').value = ''; document.getElementById('sellAddressText').value = ''; document.getElementById('sellModalOverlay').style.display = 'none'; showSolidToast("Request Sent Successfully!");
+        }
+        function openDrawer(mode) { document.getElementById('overlay').style.display = 'block'; document.getElementById('authDrawer').classList.add('open'); if(mode === 'login') { document.getElementById('loginSection').style.display = 'block'; document.getElementById('dashboardSection').style.display = 'none'; } else { document.getElementById('loginSection').style.display = 'none'; document.getElementById('dashboardSection').style.display = 'flex'; renderDashboard(); } }
+        function closeModals(e) { if (e === 'force' || e.target.id === 'overlay') { document.getElementById('overlay').style.display = 'none'; document.getElementById('authDrawer').classList.remove('open'); } }
+        function handleSignIn() { const name = document.getElementById('userName').value.trim(); if(name) { localStorage.setItem('weichertUser', JSON.stringify({ name })); checkUser(); closeModals('force'); } }
+        function handleLogout() { localStorage.removeItem('weichertUser'); checkUser(); closeModals('force'); }
+        function checkUser() { const user = JSON.parse(localStorage.getItem('weichertUser')); if(user) { document.getElementById('loginBtn').style.display = 'none'; let btn = document.getElementById('userBtn'); btn.innerText = 'My Account'; btn.style.display = 'inline-block'; } else { document.getElementById('loginBtn').style.display = 'inline-block'; document.getElementById('userBtn').style.display = 'none'; } }
+
+        function populateDropdowns() {
+            const minS = document.getElementById('filterMinPrice'), maxS = document.getElementById('filterMaxPrice'); minS.innerHTML = '<option value="0">Any Min</option>'; maxS.innerHTML = '<option value="999999999">Any Max</option>';
+            const steps = [10000, 50000, 100000, 250000, 500000, 1000000, 2500000, 5000000]; steps.forEach(val => { let formatted = "$" + val.toLocaleString(); minS.innerHTML += `<option value="${val}">${formatted}</option>`; maxS.innerHTML += `<option value="${val}">${formatted}</option>`; });
+            let props = JSON.parse(localStorage.getItem('weichertProperties')) || []; let types = new Set(), cities = new Set();
+            props.forEach(p => { if(p.type && p.type.trim() !== '') types.add(p.type.trim()); if(p.city && p.city.trim() !== '') cities.add(p.city.trim()); });
+            let tSelect = document.getElementById('filterType'); tSelect.innerHTML = '<option value="all">All Types</option>'; types.forEach(t => tSelect.innerHTML += `<option value="${t}">${t}</option>`);
+            let cSelect = document.getElementById('filterCity'); cSelect.innerHTML = '<option value="all">All Cities</option>'; cities.forEach(c => cSelect.innerHTML += `<option value="${c}">${c}</option>`); updateMatchCount();
+        }
+
+        function updateMatchCount() {
+            let props = JSON.parse(localStorage.getItem('weichertProperties')) || []; let fStat = document.getElementById('filterStatus').value, fType = document.getElementById('filterType').value, fCity = document.getElementById('filterCity').value, minP = parseInt(document.getElementById('filterMinPrice').value), maxP = parseInt(document.getElementById('filterMaxPrice').value);
+            let filtered = props.filter(p => { let priceNum = parseInt((p.price || '0').replace(/[^0-9]/g, '')) || 0; return (fStat === 'all' || p.status === fStat) && (fType === 'all' || (p.type && p.type.trim() === fType)) && (fCity === 'all' || (p.city && p.city.trim() === fCity)) && (priceNum >= minP && priceNum <= maxP); });
+            document.getElementById('matchCount').innerText = `(${filtered.length})`;
+        }
+        ['filterStatus','filterType','filterCity','filterMinPrice','filterMaxPrice'].forEach(id => document.getElementById(id).addEventListener('change', updateMatchCount));
+
+        window.toggleWishlist = function(index, e) { e.stopPropagation(); let props = JSON.parse(localStorage.getItem('weichertProperties')) || []; props[index].isWishlist = !props[index].isWishlist; if(props[index].isWishlist) { let item = props.splice(index, 1)[0]; props.unshift(item); } localStorage.setItem('weichertProperties', JSON.stringify(props)); applySearch(); if(document.getElementById('dashboardSection').style.display === 'flex') renderDashboard(); };
+
+        function renderDashboard() {
+            let props = JSON.parse(localStorage.getItem('weichertProperties')) || []; let list = document.getElementById('savedList'); list.innerHTML = '';
+            let saved = props.filter((p, i) => { p.originalIndex = i; return p.isWishlist; }); if(saved.length === 0) list.innerHTML = '<p style="color:#94a3b8; font-size:13px;">No saved properties yet.</p>';
+            saved.forEach(p => { let imgObj = p.images && p.images.length > 0 ? p.images[0] : (p.image || ''); let imgSrc = typeof imgObj === 'object' ? imgObj.url : imgObj; list.innerHTML += `<div class="saved-item"><div style="display:flex; align-items:center;"><img src="${imgSrc}"><div><strong style="color:#fff; font-size:12px;">${p.title}</strong><br><span style="color:#F4B821; font-size:11px;">${p.price}</span></div></div><a href="property-details.html?id=${p.originalIndex}" style="color:#3b82f6; font-size:12px; font-weight:bold; text-decoration:none;">View</a></div>`; });
+        }
+
+        function renderListings(customList) {
+            const grid = document.getElementById('propertiesGrid'); grid.innerHTML = ''; let props = customList || JSON.parse(localStorage.getItem('weichertProperties')) || [];
+            if (props.length === 0) { grid.innerHTML = `<p style="text-align:center; grid-column:1/-1;">No listings found.</p>`; return; }
+            props.forEach((prop) => {
+                let allProps = JSON.parse(localStorage.getItem('weichertProperties')) || []; let tIndex = allProps.findIndex(p => p.title === prop.title && p.price === prop.price);
+                let badgeCls = prop.status === 'rent' ? 'badge rent' : 'badge', badgeTxt = prop.status === 'rent' ? 'FOR RENT' : 'FOR SALE', ribbonHTML = '';
+                if(prop.isSold) { let rText = prop.status === 'rent' ? 'RENTED' : 'SOLD'; let rClass = prop.status === 'rent' ? 'ribbon rented' : 'ribbon'; ribbonHTML = `<div class="ribbon-wrapper"><div class="${rClass}">${rText}</div></div>`; }
+                let priceHTML = `<span class="price">${prop.price}</span>`; if(prop.oldPrice) priceHTML += `<span style="color:#ef4444; text-decoration:line-through; font-size:1rem; margin-left:8px;">${prop.oldPrice}</span>`;
+                let imgObj = prop.images && prop.images.length > 0 ? prop.images[0] : (prop.image || ''); let imgSrc = typeof imgObj === 'object' ? imgObj.url : imgObj; let is360 = typeof imgObj === 'object' ? imgObj.is360 : false; let badge360 = is360 ? `<div class="badge-360">360°</div>` : '';
+                grid.innerHTML += `<div class="property-card" onclick="window.location.href='property-details.html?id=${tIndex}'"><div class="card-image">${ribbonHTML} <div class="${badgeCls}">${badgeTxt}</div> ${badge360}<button class="${prop.isWishlist ? 'wishlist-btn active' : 'wishlist-btn'}" onclick="toggleWishlist(${tIndex}, event)"><svg viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg></button><img src="${imgSrc}"></div><div class="card-content"><div>${priceHTML}</div><div class="location-text">📍 ${prop.city || 'City'}</div><div class="address">${prop.address || 'Address'}</div><div class="card-features"><div class="feature"><span class="feature-value">${prop.beds}</span><span class="feature-label">Beds</span></div><div class="feature"><span class="feature-value">${prop.baths}</span><span class="feature-label">Baths</span></div><div class="feature"><span class="feature-value">${prop.sqft}</span><span class="feature-label">Sq Ft</span></div></div></div></div>`;
+            });
+        }
+
+        function applySearch() {
+            let props = JSON.parse(localStorage.getItem('weichertProperties')) || []; let fStat = document.getElementById('filterStatus').value, fType = document.getElementById('filterType').value, fCity = document.getElementById('filterCity').value, minP = parseInt(document.getElementById('filterMinPrice').value), maxP = parseInt(document.getElementById('filterMaxPrice').value);
+            let filtered = props.filter(p => { let priceNum = parseInt((p.price || '0').replace(/[^0-9]/g, '')) || 0; return (fStat === 'all' || p.status === fStat) && (fType === 'all' || (p.type && p.type.trim() === fType)) && (fCity === 'all' || (p.city && p.city.trim() === fCity)) && (priceNum >= minP && priceNum <= maxP); });
+            filtered.sort((a,b) => (parseInt((a.price||'0').replace(/[^0-9]/g,''))||0) - (parseInt((b.price||'0').replace(/[^0-9]/g,''))||0)); renderListings(filtered); updateMatchCount();
+        }
+
+        function renderAgents() {
+            let agents = JSON.parse(localStorage.getItem('weichertAgents')) || []; let grid = document.getElementById('agentGrid'); grid.innerHTML = '';
+            if(agents.length === 0) { grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:#64748b;">No agents listed yet.</p>'; return; }
+            agents.forEach((ag, i) => { grid.innerHTML += `<div class="agent-card"><img src="${ag.image || 'https://via.placeholder.com/150'}" class="agent-img"><div class="agent-name">${ag.name}</div><div class="agent-info"><span>📞 ${ag.phone}</span><span>✉️ ${ag.email}</span></div><div class="agent-btns"><button class="agent-btn msg-btn" onclick="openAgentContact(${i})">Message</button>${ag.mapLink ? `<a href="${ag.mapLink}" target="_blank" class="agent-btn map-btn">Office Location</a>` : ''}</div></div>`; });
+        }
+
+        let selectedAgentForMsg = null;
+        function openAgentContact(index) { let agents = JSON.parse(localStorage.getItem('weichertAgents')); selectedAgentForMsg = agents[index]; document.getElementById('modalAgentImg').src = selectedAgentForMsg.image || 'https://via.placeholder.com/150'; document.getElementById('modalAgentName').innerText = "Contact " + selectedAgentForMsg.name; document.getElementById('agentModalOverlay').style.display = 'flex'; }
+        function closeAgentModal(e) { if(e.target.id === 'agentModalOverlay') { document.getElementById('agentModalOverlay').style.display = 'none'; } }
+        function sendAgentLead() {
+            let e = document.getElementById('agentLeadEmail').value.trim(), p = document.getElementById('agentLeadPhone').value.trim();
+            if(!e && !p) return alert("Please provide Email or Phone!"); let n = document.getElementById('agentLeadName').value || 'Client', code = document.getElementById('agentCountryCode').value, m = document.getElementById('agentLeadMsg').value;
+            let leads = JSON.parse(localStorage.getItem('weichertLeads')) || []; leads.push({ propId: "General Inquiry", name: n, email: e, phone: p ? `${code} ${p}` : '', msg: m, targetAgent: selectedAgentForMsg.name, agentImg: selectedAgentForMsg.image }); localStorage.setItem('weichertLeads', JSON.stringify(leads));
+            document.getElementById('agentModalOverlay').style.display = 'none'; showSolidToast("Message sent to " + selectedAgentForMsg.name + "!");
+        }
+    </script>
+</body>
+</html>
